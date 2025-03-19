@@ -22,3 +22,7 @@ How to Run the Project
    ```bash
    cd backend
    python manage.py runserver
+2. Frontend
+3.    ```bash
+   cd fronted 
+   npm start
