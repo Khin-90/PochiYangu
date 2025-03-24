@@ -2,188 +2,117 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const RepayLoan = () => {
-  const [loanDetails, setLoanDetails] = useState({
-    loanAmount: 15000,
-    interestRate: 10,
-    amountDue: 16500,
-    nextPaymentDate: "2023-12-01",
-    minimumPayment: 5000,
-  });
-  
-  const [paymentAmount, setPaymentAmount] = useState(loanDetails.minimumPayment);
-  const [paymentMethod, setPaymentMethod] = useState("mpesa");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [loans, setLoans] = useState([]);
+  const [selectedLoan, setSelectedLoan] = useState("");
+  const [amount, setAmount] = useState("");
+  const [balance, setBalance] = useState("Loading...");
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // Simulating API call to get loan details
   useEffect(() => {
-    // Replace with actual API call
-    const fetchLoanDetails = async () => {
-      try {
-        setIsLoading(true);
-        // Uncomment and modify when backend is ready
-        // const response = await axios.get("http://localhost:8000/api/loan-details/");
-        // setLoanDetails(response.data);
-        
-        // Simulating API delay
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 1000);
-      } catch (err) {
-        setError("Failed to load loan details. Please try again later.");
-        setIsLoading(false);
-        console.error("Error fetching loan details:", err);
-      }
-    };
-    
-    fetchLoanDetails();
+    // Fetch wallet balance
+    axios.get("http://localhost:8000/api/wallet-balance")
+      .then(response => setBalance(response.data.balance))
+      .catch(error => console.error("Error fetching balance:", error));
+
+    // Fetch active loans
+    axios.get("http://localhost:8000/api/loans")
+      .then(response => setLoans(response.data))
+      .catch(error => console.error("Error fetching loans:", error));
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      // Uncomment and modify when backend is ready
-      // await axios.post("http://localhost:8000/api/repay-loan/", {
-      //   amount: paymentAmount,
-      //   method: paymentMethod
-      // });
-      
-      // Simulating API delay
-      setTimeout(() => {
-        setSuccess("Payment initiated successfully! Please check your phone to complete the transaction.");
-        setIsSubmitting(false);
-      }, 2000);
-    } catch (err) {
-      setError("Failed to process payment. Please try again later.");
-      setIsSubmitting(false);
-      console.error("Error processing payment:", err);
+  const handleRepay = () => {
+    if (!selectedLoan || !amount || parseFloat(amount) <= 0) {
+      setError("Please select a loan and enter a valid amount.");
+      return;
     }
+    if (parseFloat(amount) > parseFloat(balance)) {
+      setError("Insufficient wallet balance.");
+      return;
+    }
+    
+    setIsConfirmOpen(true);
   };
 
-  if (isLoading) {
-    return <div className="p-4 text-center">Loading loan details...</div>;
-  }
+  const confirmRepayment = () => {
+    axios.post("http://localhost:8000/api/repay-loan", { loan_id: selectedLoan, amount })
+      .then(response => {
+        setSuccess("Loan repaid successfully!");
+        setBalance(balance - amount);
+        setAmount("");
+        setSelectedLoan("");
+        setError("");
+        setIsConfirmOpen(false);
+      })
+      .catch(error => {
+        console.error("Repayment failed:", error);
+        setError("Repayment failed. Try again.");
+      });
+  };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Repay Loan</h1>
-      
-      <div className="mt-4 bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold">Loan Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <p className="text-gray-600">Loan Amount</p>
-            <p className="font-semibold">Ksh {loanDetails.loanAmount.toLocaleString()}</p>
-          </div>
-          
-          <div>
-            <p className="text-gray-600">Interest Rate</p>
-            <p className="font-semibold">{loanDetails.interestRate}%</p>
-          </div>
-          
-          <div>
-            <p className="text-gray-600">Amount Due</p>
-            <p className="font-semibold">Ksh {loanDetails.amountDue.toLocaleString()}</p>
-          </div>
-          
-          <div>
-            <p className="text-gray-600">Next Payment Date</p>
-            <p className="font-semibold">{loanDetails.nextPaymentDate}</p>
-          </div>
-        </div>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4">Repay Loan</h1>
+
+      {/* Loan Repayment Form */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Make a Repayment</h2>
+
+        {error && <p className="text-red-500">{error}</p>}
+        {success && <p className="text-green-500">{success}</p>}
+
+        {/* Loan Selection Dropdown */}
+        <label className="block text-gray-700 mb-2">Select Loan</label>
+        <select 
+          className="border p-2 w-full mb-4"
+          value={selectedLoan} 
+          onChange={(e) => setSelectedLoan(e.target.value)}
+        >
+          <option value="">Choose a loan</option>
+          {loans.map((loan, index) => (
+            <option key={index} value={loan.id}>
+              Loan #{loan.id} - {loan.amount} HBAR (Due: {loan.due_date})
+            </option>
+          ))}
+        </select>
+
+        {/* Amount Input */}
+        <label className="block text-gray-700 mb-2">Amount to Repay (HBAR)</label>
+        <input
+          type="number"
+          placeholder="Enter amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="border p-2 w-full mb-4"
+        />
+
+        {/* Repay Button */}
+        <button 
+          onClick={handleRepay}
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full hover:bg-blue-600"
+        >
+          Repay Loan
+        </button>
       </div>
-      
-      <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold">Make a Payment</h2>
-        
-        {error && (
-          <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-            {success}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="mt-4">
-          <div className="mb-4">
-            <label className="block text-gray-700">Payment Amount (Ksh)</label>
-            <input
-              type="number"
-              min={1000}
-              max={loanDetails.amountDue}
-              value={paymentAmount}
-              onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
-              className="border p-2 w-full rounded"
-              required
-            />
-            <p className="text-sm text-gray-600 mt-1">
-              Minimum payment: Ksh {loanDetails.minimumPayment.toLocaleString()}
-            </p>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700">Payment Method</label>
-            <div className="mt-2">
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id="mpesa"
-                  name="paymentMethod"
-                  value="mpesa"
-                  checked={paymentMethod === "mpesa"}
-                  onChange={() => setPaymentMethod("mpesa")}
-                  className="mr-2"
-                />
-                <label htmlFor="mpesa">M-Pesa</label>
-              </div>
-              
-              <div className="flex items-center mt-2">
-                <input
-                  type="radio"
-                  id="bank"
-                  name="paymentMethod"
-                  value="bank"
-                  checked={paymentMethod === "bank"}
-                  onChange={() => setPaymentMethod("bank")}
-                  className="mr-2"
-                />
-                <label htmlFor="bank">Bank Transfer</label>
-              </div>
-              
-              <div className="flex items-center mt-2">
-                <input
-                  type="radio"
-                  id="wallet"
-                  name="paymentMethod"
-                  value="wallet"
-                  checked={paymentMethod === "wallet"}
-                  onChange={() => setPaymentMethod("wallet")}
-                  className="mr-2"
-                />
-                <label htmlFor="wallet">Wallet Balance</label>
-              </div>
+
+      {/* Confirmation Modal */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4">Confirm Loan Repayment</h2>
+            <p>You are about to repay <strong>{amount} HBAR</strong> for Loan ID <strong>{selectedLoan}</strong>.</p>
+            <div className="flex justify-between mt-4">
+              <button onClick={confirmRepayment} className="bg-green-500 text-white px-4 py-2 rounded">
+                Confirm
+              </button>
+              <button onClick={() => setIsConfirmOpen(false)} className="bg-gray-500 text-white px-4 py-2 rounded">
+                Cancel
+              </button>
             </div>
           </div>
-          
-          <button
-            type="submit"
-            className="bg-green-500 text-white px-4 py-2 rounded"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Processing..." : "Pay Now"}
-          </button>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

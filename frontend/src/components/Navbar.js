@@ -1,43 +1,54 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { HashConnect } from "hashconnect";
 
 const Navbar = () => {
-  const { t, i18n } = useTranslation();
+  const [walletId, setWalletId] = useState(null);
+  const hashconnect = new HashConnect();
 
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-  };
+  useEffect(() => {
+    const initHashPack = async () => {
+      const appMetadata = {
+        name: "Pochi Yangu",
+        description: "Secure Web3 Transactions",
+        icon: "https://your-logo-url.com/logo.png",
+      };
+
+      const initData = await hashconnect.init(appMetadata);
+      hashconnect.connectToLocalWallet();
+
+      hashconnect.pairingEvent.once((pairingData) => {
+        if (pairingData.accountIds.length > 0) {
+          setWalletId(pairingData.accountIds[0]);
+        }
+      });
+    };
+
+    initHashPack();
+  }, []);
 
   return (
-    <nav className="bg-blue-500 p-4 text-white flex justify-between">
-      <h1 className="text-xl font-bold">{t("welcome")}</h1>
-      <div className="flex items-center">
-        <Link className="mx-2 hover:text-blue-200" to="/">
-          {t("home")}
+    <nav className="bg-blue-600 text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="text-xl font-bold">
+          Pochi Yangu
         </Link>
-        <Link className="mx-2 hover:text-blue-200" to="/apply-loan">
-          {t("applyLoan")}
-        </Link>
-        <Link className="mx-2 hover:text-blue-200" to="/repay-loan">
-          {t("repayLoan")}
-        </Link>
-        <Link className="mx-2 hover:text-blue-200" to="/profile">
-          {t("profile")}
-        </Link>
-        <div className="ml-4">
-          <button
-            onClick={() => changeLanguage("en")}
-            className="mx-1 px-2 py-1 bg-white text-blue-500 rounded hover:bg-gray-200"
-          >
-            English
-          </button>
-          <button
-            onClick={() => changeLanguage("sw")}
-            className="mx-1 px-2 py-1 bg-white text-blue-500 rounded hover:bg-gray-200"
-          >
-            Swahili
-          </button>
+        <div className="flex space-x-4">
+          <Link to="/wallet" className="hover:underline">Wallet</Link>
+          <Link to="/transfer" className="hover:underline">Transfer</Link>
+          <Link to="/transactions" className="hover:underline">Transactions</Link>
+          {walletId ? (
+            <span className="bg-green-500 px-3 py-1 rounded">
+              {walletId}
+            </span>
+          ) : (
+            <button
+              onClick={() => hashconnect.connectToLocalWallet()}
+              className="bg-green-500 px-4 py-2 rounded"
+            >
+              Connect Wallet
+            </button>
+          )}
         </div>
       </div>
     </nav>

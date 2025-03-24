@@ -5,30 +5,31 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@hashgraph/sdk": "^2.61.0",
     "@mui/material": "^6.4.8",
     "@mysten/sui.js": "^0.54.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.8.3",
+    "axios": "^1.8.4",
     "i18next": "^24.2.3",
     "i18next-browser-languagedetector": "^8.0.4",
     "i18next-http-backend": "^3.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^15.4.1",
-    "react-router-dom": "^7.3.0",
+    "react-router-dom": "^7.4.0",
     "react-scripts": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
-"scripts": {
-  "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
-  "build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
-  "test": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts test",
-  "eject": "react-scripts eject"
-},
-"eslintConfig": {
+  "scripts": {
+    "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
+    "build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
+    "test": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
@@ -51,10 +52,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.0.14"
+    "tailwindcss": "^4.0.15"
   }
 }

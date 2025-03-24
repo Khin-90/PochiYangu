@@ -1,86 +1,76 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 
-const LoanForm = () => {
-  const [amount, setAmount] = useState(0);
-  const [interest, setInterest] = useState(0);
-  const [isEligible, setIsEligible] = useState(true);
+const LoanForm = ({ loanAmount, interest, totalRepayment }) => {
+  const [repaymentPeriod, setRepaymentPeriod] = useState("");
+  const [collateral, setCollateral] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // Simulate eligibility check (replace with actual API call)
-  useEffect(() => {
-    axios
-      .get("http://localhost:8000/api/check-eligibility/")
-      .then((response) => {
-        setIsEligible(response.data.is_eligible);
-      })
-      .catch((error) => {
-        console.error("Error checking eligibility:", error);
-      });
-  }, []);
-
-  // Calculate interest based on the loan amount
-  useEffect(() => {
-    const calculatedInterest = amount * 0.1; // 10% interest rate
-    setInterest(calculatedInterest);
-  }, [amount]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isEligible) {
-      axios
-        .post("http://localhost:8000/api/apply-loan/", { amount, interest })
-        .then((response) => {
-          alert(`Loan application submitted! ${response.data.message}`);
-        })
-        .catch((error) => {
-          console.error("Error submitting loan application:", error);
-          alert("Failed to submit loan application.");
-        });
+  const handleSubmit = () => {
+    if (!repaymentPeriod || !collateral) {
+      setError("All fields are required.");
+      return;
     }
+
+    axios.post("http://localhost:8000/api/confirm-loan", { 
+      loanAmount, interest, totalRepayment, repaymentPeriod, collateral 
+    })
+      .then(response => {
+        setSuccess("Loan request submitted successfully!");
+        setError("");
+      })
+      .catch(error => {
+        console.error("Loan request failed:", error);
+        setError("Loan submission failed. Try again.");
+      });
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Apply for a Loan</h1>
-      {!isEligible ? (
-        <div className="mt-4 bg-green-100 p-4 rounded-lg">
-          <p className="text-lg">So sorry! We can't offer you a loan right now.</p>
-          <p className="mt-2">
-            We're sorry but unfortunately you do not qualify for a loan because you were late to pay your previous loan. Thank you.
-          </p>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="mt-4">
-          <label className="block">Loan Amount (Ksh):</label>
-          <input
-            type="range"
-            min="0"
-            max="100000"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full"
-          />
-          <p className="text-lg mt-2">Amount: Ksh {amount}</p>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4">Loan Confirmation</h1>
 
-          <label className="block mt-4">Interest (10%):</label>
-          <input
-            type="range"
-            min="0"
-            max={amount * 0.1}
-            value={interest}
-            readOnly
-            className="w-full"
-          />
-          <p className="text-lg mt-2">Interest: Ksh {interest}</p>
+      {/* Loan Summary */}
+      <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-4">
+        <h2 className="text-xl font-semibold mb-2">Loan Details</h2>
+        <p><strong>Amount:</strong> {loanAmount} HBAR</p>
+        <p><strong>Interest:</strong> {interest} HBAR</p>
+        <p><strong>Total Repayment:</strong> {totalRepayment} HBAR</p>
+      </div>
 
-          <button
-            type="submit"
-            className="bg-green-500 text-white px-4 py-2 mt-4"
-          >
-            Apply
-          </button>
-        </form>
-      )}
+      {/* Loan Form */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        {error && <p className="text-red-500">{error}</p>}
+        {success && <p className="text-green-500">{success}</p>}
+
+        {/* Repayment Period */}
+        <label className="block text-gray-700 mb-2">Repayment Period (months)</label>
+        <input
+          type="number"
+          placeholder="Enter repayment period"
+          value={repaymentPeriod}
+          onChange={(e) => setRepaymentPeriod(e.target.value)}
+          className="border p-2 w-full mb-4"
+        />
+
+        {/* Collateral */}
+        <label className="block text-gray-700 mb-2">Collateral (if required)</label>
+        <input
+          type="text"
+          placeholder="Enter collateral details"
+          value={collateral}
+          onChange={(e) => setCollateral(e.target.value)}
+          className="border p-2 w-full mb-4"
+        />
+
+        {/* Submit Button */}
+        <button 
+          onClick={handleSubmit}
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full hover:bg-blue-600"
+        >
+          Submit Loan Request
+        </button>
+      </div>
     </div>
   );
 };

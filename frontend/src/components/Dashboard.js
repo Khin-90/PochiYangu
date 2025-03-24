@@ -1,70 +1,66 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const Dashboard = () => {
-  // Example data (replace with real data from your backend)
-  const userStats = {
-    loanBalance: 15000,
-    nextPaymentDue: "2023-12-01",
-    recentTransactions: [
-      { id: 1, amount: 5000, date: "2023-11-15", type: "Repayment" },
-      { id: 2, amount: 10000, date: "2023-11-10", type: "Loan Disbursement" },
-    ],
-  };
+  const [balance, setBalance] = useState("Loading...");
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    // Fetch Hedera wallet balance (Replace API with actual endpoint)
+    axios.get("http://localhost:8000/api/wallet-balance")
+      .then(response => setBalance(response.data.balance))
+      .catch(error => console.error("Error fetching balance:", error));
+
+    // Fetch transaction history (Replace API with actual endpoint)
+    axios.get("http://localhost:8000/api/transactions")
+      .then(response => setTransactions(response.data))
+      .catch(error => console.error("Error fetching transactions:", error));
+  }, []);
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <p className="mt-2">Welcome to your financial dashboard.</p>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
 
-      {/* Quick Actions */}
-      <div className="mt-4">
-        <h2 className="text-xl font-semibold">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-          <Link
-            to="/apply-loan"
-            className="bg-blue-500 text-white p-4 rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
-          >
-            Apply for a Loan
-          </Link>
-          <Link
-            to="/repay-loan"
-            className="bg-green-500 text-white p-4 rounded-lg shadow-md hover:bg-green-600 transition duration-300"
-          >
-            Repay Loan
-          </Link>
-          <Link
-            to="/profile"
-            className="bg-purple-500 text-white p-4 rounded-lg shadow-md hover:bg-purple-600 transition duration-300"
-          >
-            View Profile
-          </Link>
+      {/* Wallet Balance Card */}
+      <div className="bg-blue-600 text-white p-6 rounded-lg shadow-md flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-semibold">Wallet Balance</h2>
+          <p className="text-3xl font-bold mt-2">{balance} HBAR</p>
         </div>
+        <button className="bg-white text-blue-600 px-4 py-2 rounded shadow-md hover:bg-gray-100">
+          Add Funds
+        </button>
       </div>
 
-      {/* User Statistics */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold">Your Statistics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Loan Balance</h3>
-            <p className="text-gray-700">Ksh {userStats.loanBalance}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Next Payment Due</h3>
-            <p className="text-gray-700">{userStats.nextPaymentDue}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Recent Transactions</h3>
-            <ul className="mt-2">
-              {userStats.recentTransactions.map((transaction) => (
-                <li key={transaction.id} className="text-gray-700">
-                  {transaction.type}: Ksh {transaction.amount} on {transaction.date}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+      {/* Recent Transactions */}
+      <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100 text-gray-700">
+              <th className="p-2 text-left">Txn ID</th>
+              <th className="p-2 text-left">Amount</th>
+              <th className="p-2 text-left">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.length > 0 ? (
+              transactions.map((txn, index) => (
+                <tr key={index} className="border-t">
+                  <td className="p-2">{txn.transaction_id}</td>
+                  <td className="p-2">{txn.amount} HBAR</td>
+                  <td className="p-2">{txn.date}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="p-4 text-center text-gray-500">
+                  No recent transactions
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
