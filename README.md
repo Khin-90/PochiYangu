@@ -5,6 +5,7 @@ Pochi Yangu is a next-generation fintech application built on Hedera Hashgraph, 
 The platform leverages Hedera’s low-cost, high-speed, and eco-friendly blockchain technology, ensuring seamless transactions while maintaining transparency and security.
 
 🚀 Key Features
+
 ✅ Instant Peer-to-Peer Transactions – Send & receive payments instantly via Hedera Hashgraph.
 ✅ Loan Management System – Apply for loans with automated interest calculation & dynamic credit limits.
 ✅ Secure Savings Wallet – Deposit & withdraw funds with real-time balance tracking.
@@ -13,18 +14,23 @@ The platform leverages Hedera’s low-cost, high-speed, and eco-friendly blockch
 ✅ Web3 & Tokenization Ready – Potential for token-based rewards & integrations.
 
 🔹 Technologies Used
+
 🔹 Frontend: React, TailwindCSS, Axios, React Router
 🔹 Backend: Django, Hedera SDK, PostgreSQL
 🔹 Blockchain: Hedera Hashgraph for secure transactions
 🔹 APIs & Tools: Axios, Python Decouple, Django REST Framework
 
 🌍 Future Enhancements
+
 🚀 Hedera Tokenization – Introducing stablecoin support for cross-border payments.
 🚀 AI-powered Financial Insights – Personalized recommendations for users.
 🚀 Mobile App Expansion – Extending services to Android & iOS.
 
 📌 Why Pochi Yangu?
-🔒 Decentralized & Secure | ⚡ Fast & Low-Cost Transactions | 🌿 Eco-Friendly Blockchain | 💰 Financial Inclusion
+🔒 Decentralized & Secure 
+⚡ Fast & Low-Cost Transactions 
+🌿 Eco-Friendly Blockchain 
+💰 Financial Inclusion
 
 Pochi Yangu is redefining fintech with Hedera – secure, fast, and borderless financial transactions.
 
