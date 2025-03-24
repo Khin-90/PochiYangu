@@ -1,9 +1,10 @@
 Project is still in Progress
 
 Pochi Yangu
-
 Description
-Pochi Yangu is a fintech application designed to provide users with easy access to loans and financial management tools. The project combines a React frontend, a Django backend, and Sui blockchain integration to create a secure, transparent, and user-friendly platform.
+Pochi Yangu is a next-generation fintech application built on Hedera Hashgraph, designed to provide secure, fast, and efficient digital transactions. It enables users to send and receive payments, manage savings, apply for loans, and track financial transactions with decentralized security and real-time processing.
+
+The platform leverages Hedera’s low-cost, high-speed, and eco-friendly blockchain technology, ensuring seamless transactions while maintaining transparency and security.
 
 Key Features
 - Loan Application
