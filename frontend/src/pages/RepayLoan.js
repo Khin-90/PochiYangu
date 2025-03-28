@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { repayLoan } from "../utils/htsService";
-import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
 
 const RepayLoan = () => {
   const [loans, setLoans] = useState([
