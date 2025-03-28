@@ -1,66 +1,68 @@
-/* Global Styles */
+/* ===== Global Styles ===== */
 body {
-  font-family: "Inter", sans-serif;
-  background-color: #f8fbff;
-  color: #333;
+  font-family: 'Inter', sans-serif;
   margin: 0;
   padding: 0;
+  background: #f3f4f6;
 }
 
-/* Layout & Spacing */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+/* ===== Glassmorphism Effect for Auth Popup ===== */
+.auth-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 30px;
+  text-align: center;
 }
 
-/* Card Styles */
-.card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-/* Buttons */
-.button {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 16px;
+/* ===== Form Inputs ===== */
+.auth-modal input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
   border: none;
   border-radius: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  outline: none;
   font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s ease;
 }
 
-.button:hover {
-  background-color: #0056b3;
-}
-
-/* Input Fields */
-input {
+/* ===== Auth Buttons (Light Blue) ===== */
+.auth-modal button {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  margin-top: 5px;
+  background: linear-gradient(135deg, #87CEFA, #00BFFF); /* Light blue gradient */
+  color: white;
+  font-weight: bold;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  border: none;
+  cursor: pointer;
 }
 
-/* Headers */
-h1, h2, h3 {
-  color: #004aad;
-  margin-bottom: 10px;
+.auth-modal button:hover {
+  background: linear-gradient(135deg, #00BFFF, #1E90FF); /* Darker blue hover */
+  transform: scale(1.05);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .container {
-    padding: 10px;
+/* ===== Close Animation ===== */
+.auth-modal.fade-out {
+  animation: fadeOut 0.4s forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
-
-  .card {
-    padding: 15px;
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
   }
 }

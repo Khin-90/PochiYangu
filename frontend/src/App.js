@@ -13,6 +13,8 @@ import Transactions from "./pages/Transactions.js";
 import Signup from "./pages/Signup.js";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   return (
     <Router>
       {/* Remove or adjust the outer styling if you want a full-viewport layout */}
