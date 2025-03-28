@@ -1,93 +1,71 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { useState } from "react";
+import { createLoanToken, issueLoan, repayLoan } from "../utils/htsService";
+import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
 
 const ApplyLoan = () => {
-  const [loanAmount, setLoanAmount] = useState("");
+  const [loanAmount, setLoanAmount] = useState(0);
   const [interest, setInterest] = useState(0);
-  const [totalRepayment, setTotalRepayment] = useState(0);
-  const [userStatus, setUserStatus] = useState("new"); // Default to new user
-  const [loanLimit, setLoanLimit] = useState(100); // Default loan limit for new users
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loans, setLoans] = useState([
+    { id: 1, amount: 3000, interest: 300, status: "Pending" },
+    { id: 2, amount: 7000, interest: 700, status: "Pending" },
+  ]);
 
-  useEffect(() => {
-    // Fetch user status & loan limit
-    axios.get("http://localhost:8000/api/user-status")
-      .then(response => {
-        setUserStatus(response.data.status);
-        setLoanLimit(response.data.loan_limit);
-      })
-      .catch(error => console.error("Error fetching user status:", error));
-  }, []);
+  const calculateInterest = (amount) => {
+    return amount * 0.1; // 10% interest for now
+  };
 
-  useEffect(() => {
-    if (loanAmount) {
-      const interestRate = userStatus === "frequent" ? 5 : 10; // Lower interest for frequent users
-      const calculatedInterest = (loanAmount * interestRate) / 100;
-      setInterest(calculatedInterest);
-      setTotalRepayment(parseFloat(loanAmount) + calculatedInterest);
+  const handleApply = async () => {
+    if (loanAmount <= 0) return;
+    
+    const newLoan = {
+      id: loans.length + 1,
+      amount: loanAmount,
+      interest: calculateInterest(loanAmount),
+      status: "Pending",
+    };
+
+    setLoans([...loans, newLoan]);
+    setLoanAmount(0);
+    setInterest(0);
+
+    try {
+      const tokenId = await createLoanToken(loanAmount);
+      await issueLoan(tokenId, loanAmount);
+      console.log("Loan successfully issued on Hedera.");
+    } catch (error) {
+      console.error("Hedera loan transaction failed:", error);
     }
-  }, [loanAmount, userStatus]);
-
-  const handleApply = () => {
-    if (!loanAmount || parseFloat(loanAmount) <= 0) {
-      setError("Enter a valid loan amount.");
-      return;
-    }
-    if (parseFloat(loanAmount) > loanLimit) {
-      setError(`Loan request exceeds your limit of ${loanLimit} HBAR.`);
-      return;
-    }
-
-    axios.post("http://localhost:8000/api/apply-loan", { loanAmount, interest })
-      .then(response => {
-        setSuccess("Loan application submitted successfully!");
-        setLoanAmount("");
-        setInterest(0);
-        setTotalRepayment(0);
-        setError("");
-      })
-      .catch(error => {
-        console.error("Loan application failed:", error);
-        setError("Loan application failed. Try again.");
-      });
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Apply for a Loan</h1>
-
-      {/* Loan Application Form */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Loan Details</h2>
-
-        {error && <p className="text-red-500">{error}</p>}
-        {success && <p className="text-green-500">{success}</p>}
-
-        {/* Loan Amount Input */}
-        <label className="block text-gray-700 mb-2">Enter Loan Amount (HBAR)</label>
-        <input
+    <div className="p-6 space-y-4">
+      <h1 className="text-xl font-bold">Apply for a Loan</h1>
+      <Card className="p-4 border border-gray-300 rounded-lg shadow-md">
+        <Input
           type="number"
-          placeholder="Enter amount"
+          placeholder="Enter loan amount"
           value={loanAmount}
-          onChange={(e) => setLoanAmount(e.target.value)}
-          className="border p-2 w-full mb-4"
+          onChange={(e) => {
+            setLoanAmount(Number(e.target.value));
+            setInterest(calculateInterest(Number(e.target.value)));
+          }}
         />
-
-        {/* Interest & Repayment Summary */}
-        <div className="bg-gray-100 p-4 rounded-lg mb-4">
-          <p><strong>Interest Rate:</strong> {userStatus === "frequent" ? "5%" : "10%"}</p>
-          <p><strong>Interest Amount:</strong> {interest} HBAR</p>
-          <p><strong>Total Repayment:</strong> {totalRepayment} HBAR</p>
-        </div>
-
-        {/* Apply Button */}
-        <button 
-          onClick={handleApply}
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg w-full hover:bg-blue-600"
-        >
-          Apply for Loan
-        </button>
+        <p className="text-sm text-gray-500 mt-2">Interest: Ksh {interest}</p>
+        <Button className="mt-2" onClick={handleApply}>
+          Apply Loan
+        </Button>
+      </Card>
+      <div className="space-y-2">
+        <h2 className="text-lg font-bold">My Loans</h2>
+        {loans.map((loan) => (
+          <Card key={loan.id} className="p-4 border border-gray-300 rounded-lg shadow-md">
+            <p className="text-lg font-semibold">Amount: Ksh {loan.amount}</p>
+            <p className="text-sm text-gray-500">Interest: Ksh {loan.interest}</p>
+            <p className="text-sm font-bold text-red-500">Status: {loan.status}</p>
+          </Card>
+        ))}
       </div>
     </div>
   );
