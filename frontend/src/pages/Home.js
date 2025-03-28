@@ -25,13 +25,28 @@ const Home = () => {
         The future of secure and fast financial transactions. Send, save, and manage money with ease.
       </p>
 
-      {/* Call-to-Action Buttons */}
-      <div className="flex space-x-4">
+      {/* Navigation Links */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Link to="/apply-loan" className="bg-white text-blue-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
           Apply for a Loan
         </Link>
         <Link to="/wallet" className="bg-white text-purple-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
           View Wallet
+        </Link>
+        <Link to="/dashboard" className="bg-white text-green-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
+          Dashboard
+        </Link>
+        <Link to="/savings" className="bg-white text-yellow-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
+          Savings
+        </Link>
+        <Link to="/transactions" className="bg-white text-indigo-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
+          Transactions
+        </Link>
+        <Link to="/profile" className="bg-white text-red-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
+          Profile
+        </Link>
+        <Link to="/explore" className="bg-white text-teal-600 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100">
+          Explore 🔍
         </Link>
       </div>
     </div>

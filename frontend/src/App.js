@@ -1,5 +1,6 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -13,53 +14,89 @@ import ApplyLoan from "./pages/ApplyLoan";
 import LoanForm from "./pages/LoanForm";
 import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
-import Explore from "./pages/Explore"; // ✅ Integrated Explore.js
-// import supabase from "./supabaseClient"; // ⚠️ Commented out for now
-// import Auth from "./pages/Auth"; // ⚠️ Commented out for now
+import Explore from "./pages/Explore";
+import Auth from "./pages/Auth";
+import "./App.css";
 
-/*
-function PrivateRoute({ element }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
-    };
-    checkUser();
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-
-  return user ? element : <Navigate to="/auth" />;
+function PrivateRoute({ element, isAuthenticated }) {
+  return isAuthenticated ? element : <Navigate to="/" />;
 }
-*/
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
-        <Navbar />
+        {!isAuthenticated && <Auth onLogin={() => setIsAuthenticated(true)} />}
+        {isAuthenticated && <Navbar />}
+
         <div className="flex-grow p-6">
-          <Routes>
-            {/* <Route path="/auth" element={<Auth />} /> */} 
-            <Route path="/" element={<Home />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/transfer" element={<Transfer />} />
-            <Route path="/request-payment" element={<RequestPayment />} />
-            <Route path="/savings" element={<Savings />} />
-            <Route path="/repay-loan" element={<RepayLoan />} />
-            <Route path="/apply-loan" element={<ApplyLoan />} />
-            <Route path="/loan-form" element={<LoanForm />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/transactions" element={<Transactions />} />
-            <Route path="/explore" element={<Explore />} /> {/* ✅ Explore added */}
-          </Routes>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              {isAuthenticated && (
+                <>
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <motion.div
+                        initial={{ x: "100vw", opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "-100vw", opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                      >
+                        <Dashboard />
+                      </motion.div>
+                    }
+                  />
+                  <Route
+                    path="/wallet"
+                    element={
+                      <motion.div
+                        initial={{ x: "100vw", opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "-100vw", opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                      >
+                        <Wallet />
+                      </motion.div>
+                    }
+                  />
+                  <Route
+                    path="/transfer"
+                    element={
+                      <motion.div
+                        initial={{ x: "100vw", opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "-100vw", opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                      >
+                        <Transfer />
+                      </motion.div>
+                    }
+                  />
+                  <Route
+                    path="/explore"
+                    element={
+                      <motion.div
+                        initial={{ x: "100vw", opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "-100vw", opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                      >
+                        <Explore />
+                      </motion.div>
+                    }
+                  />
+                  {/* Add more routes with animations */}
+                </>
+              )}
+            </Routes>
+          </AnimatePresence>
         </div>
-        <Footer />
+
+        {isAuthenticated && <Footer />}
       </div>
     </Router>
   );
