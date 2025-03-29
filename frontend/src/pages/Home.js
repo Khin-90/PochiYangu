@@ -1,102 +1,80 @@
+// Home.js
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { FaSearch } from "react-icons/fa";
+import Button from "@mui/material/Button";
 import "../styles/Home.css";
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState("wallet");
+  // Default active tab is set to "home"; adjust if you prefer "wallet"
+  const [activeTab, setActiveTab] = useState("home");
 
   return (
-    <div className="home-container">
+    <div className="dashboard-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <h2 className="logo">Pochi Yangu</h2>
+        <h2>Pochi Yangu</h2>
         <nav>
           <ul>
-            <li>
-              <Link
-                to="/wallet"
-                className={activeTab === "wallet" ? "active" : ""}
-                onClick={() => setActiveTab("wallet")}
-              >
+            <li className={activeTab === "home" ? "active" : ""}>
+              <Link to="/home" onClick={() => setActiveTab("home")}>
+                Home
+              </Link>
+            </li>
+            <li className={activeTab === "wallet" ? "active" : ""}>
+              <Link to="/wallet" onClick={() => setActiveTab("wallet")}>
                 Wallet
               </Link>
             </li>
-            <li>
-              <Link
-                to="/transfer"
-                className={activeTab === "transfer" ? "active" : ""}
-                onClick={() => setActiveTab("transfer")}
-              >
+            <li className={activeTab === "transfer" ? "active" : ""}>
+              <Link to="/transfer" onClick={() => setActiveTab("transfer")}>
                 Transfer Money
               </Link>
             </li>
-            <li>
-              <Link
-                to="/explore"
-                className={activeTab === "explore" ? "active" : ""}
-                onClick={() => setActiveTab("explore")}
-              >
+            <li className={activeTab === "explore" ? "active" : ""}>
+              <Link to="/explore" onClick={() => setActiveTab("explore")}>
                 Explore
               </Link>
             </li>
-            <li>
+            <li className={activeTab === "billing" ? "active" : ""}>
               <Link
                 to="/billing-dashboard"
-                className={activeTab === "billing" ? "active" : ""}
                 onClick={() => setActiveTab("billing")}
               >
                 Billings
               </Link>
             </li>
-            <li>
+            <li className={activeTab === "transactions" ? "active" : ""}>
               <Link
                 to="/transactions"
-                className={activeTab === "transactions" ? "active" : ""}
                 onClick={() => setActiveTab("transactions")}
               >
                 Transactions
               </Link>
             </li>
-            <li>
-              <Link
-                to="/profile"
-                className={activeTab === "profile" ? "active" : ""}
-                onClick={() => setActiveTab("profile")}
-              >
+            <li className={activeTab === "profile" ? "active" : ""}>
+              <Link to="/profile" onClick={() => setActiveTab("profile")}>
                 Profile
               </Link>
             </li>
-            <li>
-              <Link
-                to="/savings"
-                className={activeTab === "savings" ? "active" : ""}
-                onClick={() => setActiveTab("savings")}
-              >
+            <li className={activeTab === "savings" ? "active" : ""}>
+              <Link to="/savings" onClick={() => setActiveTab("savings")}>
                 Savings
               </Link>
             </li>
-            <li>
-              <Link
-                to="/apply-loan"
-                className={activeTab === "apply-loan" ? "active" : ""}
-                onClick={() => setActiveTab("apply-loan")}
-              >
-                Apply for Loan
+            <li className={activeTab === "apply-loan" ? "active" : ""}>
+              <Link to="/apply-loan" onClick={() => setActiveTab("apply-loan")}>
+                Apply Loan
               </Link>
             </li>
-            <li>
-              <Link
-                to="/repay-loan"
-                className={activeTab === "repay-loan" ? "active" : ""}
-                onClick={() => setActiveTab("repay-loan")}
-              >
+            <li className={activeTab === "repay-loan" ? "active" : ""}>
+              <Link to="/repay-loan" onClick={() => setActiveTab("repay-loan")}>
                 Repay Loan
               </Link>
             </li>
-            <li>
+            <li className={activeTab === "request-payment" ? "active" : ""}>
               <Link
                 to="/request-payment"
-                className={activeTab === "request-payment" ? "active" : ""}
                 onClick={() => setActiveTab("request-payment")}
               >
                 Request Payment
@@ -105,48 +83,81 @@ const Home = () => {
           </ul>
         </nav>
         <div className="bottom-links">
-          <Link to="#">Adjust Settings</Link>
-          <Link to="#">Logout</Link>
+          <Link to="/settings" onClick={() => setActiveTab("settings")}>
+            Adjust Settings
+          </Link>
+          <Link to="/logout">Logout</Link>
         </div>
       </aside>
 
-      {/* Wallets Section */}
-      <main className="wallets-container">
-        {/* Search Bar */}
-        <div className="search-bar">
-          <input type="text" placeholder="Search transactions, accounts, loans..." />
-        </div>
+      {/* Main Content */}
+      <main className="main-content">
+        <header className="top-bar">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Search transactions, accounts, loans"
+            />
+            <FaSearch className="search-icon" />
+          </div>
+          <div className="profile">Lorem Ipsum</div>
+        </header>
 
-        {/* Wallet Balance Cards */}
-        <div className="wallet-cards">
-          <div className="card">
+        <section className="transfer-details">
+          <div className="transfer-card">
             <p>Total balance overview</p>
             <h3>$222,358 available</h3>
+            <p>**** **** **** 9222</p>
           </div>
-          <div className="card">
+          <div className="transfer-card">
             <p>Total balance overview</p>
             <h3>$392,100 available</h3>
+            <p>**** **** **** 9222</p>
           </div>
-        </div>
+          <Button variant="contained" className="transfer-btn">
+            Initiate transfer
+          </Button>
+        </section>
 
-        {/* Weekly Financial Graph (Placeholder) */}
-        <div className="financial-section">
-          <h3>Weekly Financial</h3>
-          <p className="negative-balance">-$109,876.33 balance</p>
+        <section className="weekly-financial">
+          <div className="tabs">
+            <span>Expense overview</span>
+            <span>Income overview</span>
+          </div>
+          <h2 className="balance">-$109,876.33 balance</h2>
+          <p className="avg-spending">Avg. monthly spending</p>
+          <Button variant="contained" className="upgrade-plan">
+            UPGRADE PLAN
+          </Button>
+          {/* Added graph placeholder as seen in the old version */}
           <div className="graph-placeholder">Graph Here</div>
-        </div>
+        </section>
       </main>
 
-      {/* Contact List */}
-      <aside className="contacts-container">
+      {/* Contacts List */}
+      <aside className="contacts-list">
         <h3>Contacts List</h3>
-        <div className="contacts">
-          <div className="contact"><div className="icon" /> Contact: Lion Mike</div>
-          <div className="contact"><div className="icon" /> Contact: Sam Smith</div>
-          <div className="contact"><div className="icon" /> Contact: Josh Kendall</div>
-          <div className="contact"><div className="icon" /> Contact: Emma Ive</div>
-          <div className="contact"><div className="icon" /> Contact: Zac Efron</div>
-        </div>
+        <ul>
+          <li>
+            <div className="icon"></div> Contact: Lion Mike
+          </li>
+          <li>
+            <div className="icon"></div> Contact: Sam Smith
+          </li>
+          <li>
+            <div className="icon"></div> Contact: Josh Kendall
+          </li>
+          <li>
+            <div className="icon"></div> Contact: Emma Ive
+          </li>
+          <li>
+            <div className="icon"></div> Contact: Zac Efron
+          </li>
+        </ul>
+        <Button variant="outlined" className="load-more">
+          Load more data
+        </Button>
+        <div className="savings-tip">Tips to save 10% more</div>
       </aside>
     </div>
   );

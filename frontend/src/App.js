@@ -12,8 +12,9 @@ import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import Explore from "./pages/Explore";
 import Auth from "./pages/Auth";
-import BillingDashboard from "./pages/BillingDashboard"; // ✅ Import BillingDashboard
+import BillingDashboard from "./pages/BillingDashboard";
 import "./App.css";
+import LoanManagement from "./pages/LoanManagement";
 
 function PrivateRoute({ element, isAuthenticated }) {
   return isAuthenticated ? element : <Navigate to="/" />;
@@ -25,16 +26,27 @@ function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
-        {!isAuthenticated && <Auth onLogin={() => setIsAuthenticated(true)} />}
-
         <div className="flex-grow p-6">
           <AnimatePresence mode="wait">
             <Routes>
-              <Route path="/" element={<Home />} />
-              {isAuthenticated && (
-                <>
-                  <Route
-                    path="/wallet"
+              {/* Authentication Route */}
+              <Route
+                path="/"
+                element={
+                  !isAuthenticated ? (
+                    <Auth onLogin={() => setIsAuthenticated(true)} />
+                  ) : (
+                    <Navigate to="/home" replace />
+                  )
+                }
+              />
+
+              {/* Protected Routes */}
+              <Route
+                path="/home"
+                element={
+                  <PrivateRoute
+                    isAuthenticated={isAuthenticated}
                     element={
                       <motion.div
                         initial={{ x: "100vw", opacity: 0 }}
@@ -42,129 +54,47 @@ function App() {
                         exit={{ x: "-100vw", opacity: 0 }}
                         transition={{ duration: 0.6, ease: "easeInOut" }}
                       >
-                        <Wallet />
+                        <Home />
                       </motion.div>
                     }
                   />
-                  <Route
-                    path="/transfer"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <Transfer />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/explore"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <Explore />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/request-payment"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <RequestPayment />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/savings"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <Savings />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/repay-loan"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <RepayLoan />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/apply-loan"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <ApplyLoan />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <Profile />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/transactions"
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <Transactions />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/billing-dashboard" // ✅ Added route for BillingDashboard
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <BillingDashboard />
-                      </motion.div>
-                    }
-                  />
-                </>
-              )}
+                }
+              />
+
+              {/* Other Protected Routes */}
+              {[
+                { path: "/wallet", component: Wallet },
+                { path: "/transfer", component: Transfer },
+                { path: "/request-payment", component: RequestPayment },
+                { path: "/savings", component: Savings },
+                { path: "/repay-loan", component: RepayLoan },
+                { path: "/apply-loan", component: ApplyLoan },
+                { path: "/profile", component: Profile },
+                { path: "/transactions", component: Transactions },
+                { path: "/explore", component: Explore },
+                { path: "/billing-dashboard", component: BillingDashboard },
+                { path: "/loanManagement", component: LoanManagement },
+              ].map((route) => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={
+                    <PrivateRoute
+                      isAuthenticated={isAuthenticated}
+                      element={
+                        <motion.div
+                          initial={{ x: "100vw", opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          exit={{ x: "-100vw", opacity: 0 }}
+                          transition={{ duration: 0.6, ease: "easeInOut" }}
+                        >
+                          <route.component />
+                        </motion.div>
+                      }
+                    />
+                  }
+                />
+              ))}
             </Routes>
           </AnimatePresence>
         </div>
