@@ -1,76 +1,111 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaSearch, FaStar } from "react-icons/fa";
+import "../styles/Explore.css";
+
+const recommendations = [
+  { title: "Loan Insights", image: "/images/Loan_insights.jpg" },
+  { title: "Stablecoin Basics", image: "/images/stablecoin_basics.jpg" },
+  { title: "Secure Transactions", image: "/images/secure_transactions.jpg" },
+];
 
 const ExploreFinancialOptions = () => {
+  const [hovered, setHovered] = useState(false);
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    if (!hovered) {
+      const interval = setInterval(() => {
+        setOffset((prevOffset) => (prevOffset + 1) % recommendations.length);
+      }, 3000); // Move every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [hovered]);
+
   return (
-    <div className="p-6 text-gray-800 dark:text-white">
-      <h1 className="text-2xl font-bold mb-4">Explore Financial Options</h1>
-      
+    <div className="explore-container">
+      <h1 className="explore-title">Explore Financial Options</h1>
+
       {/* Search Bar */}
-      <div className="flex items-center bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-4">
-        <input 
-          type="text" 
-          placeholder="Search transactions" 
-          className="flex-grow bg-transparent outline-none px-2"
-        />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-          <FaSearch className="mr-2" /> Search
+      <div className="search-bar">
+        <input type="text" placeholder="Search transactions" className="search-input" />
+        <button className="search-button">
+          <FaSearch className="search-icon" /> Search
         </button>
       </div>
-      
+
       {/* Recent Searches */}
-      <div className="mb-4">
-        <h2 className="font-semibold mb-2">Recent Searches</h2>
-        <div className="flex flex-wrap gap-2">
+      <div className="section">
+        <h2 className="section-title">Recent Searches</h2>
+        <div className="tags">
           {["Loan Management", "Stablecoin Support", "Hedera Hashgraph", "Dark Mode"].map((tag) => (
-            <span key={tag} className="bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-full text-sm">{tag}</span>
+            <span key={tag} className="tag">{tag}</span>
           ))}
         </div>
       </div>
-      
+
       {/* Categories */}
-      <div className="mb-4">
-        <h2 className="font-semibold mb-2">Categories</h2>
-        <div className="flex flex-wrap gap-4">
+      <div className="section">
+        <h2 className="section-title">Categories</h2>
+        <div className="checkbox-group">
           {["Loan", "Stablecoin", "Cross-border", "Hedera"].map((category) => (
-            <label key={category} className="flex items-center">
-              <input type="checkbox" className="mr-2" /> {category}
+            <label key={category} className="checkbox-label">
+              <input type="checkbox" className="checkbox-input" /> {category}
             </label>
           ))}
         </div>
       </div>
-      
+
       {/* Security & User Experience */}
-      <div className="grid grid-cols-2 gap-6 mb-4">
-        <div>
-          <h2 className="font-semibold mb-2">Security</h2>
-          <div className="flex">
+      <div className="grid-container">
+        <div className="security">
+          <h2 className="section-title">Security</h2>
+          <div className="stars">
             {[...Array(5)].map((_, i) => (
-              <FaStar key={i} className="text-yellow-500 mr-1" />
+              <FaStar key={i} className="star-icon" />
             ))}
           </div>
         </div>
-        <div>
-          <h2 className="font-semibold mb-2">User Experience</h2>
-          <div className="flex gap-4">
+        <div className="user-experience">
+          <h2 className="section-title">User Experience</h2>
+          <div className="checkbox-group">
             {["Beginner", "Intermediate", "Professional"].map((level) => (
-              <label key={level} className="flex items-center">
-                <input type="checkbox" className="mr-2" /> {level}
+              <label key={level} className="checkbox-label">
+                <input type="checkbox" className="checkbox-input" /> {level}
               </label>
             ))}
           </div>
         </div>
       </div>
-      
-      {/* Recommended Section */}
-      <div>
-        <h2 className="font-semibold mb-2">Recommended for You</h2>
-        <div className="grid grid-cols-4 gap-4">
-          {["Loan Insights", "Stablecoin Basics", "Cross-border Finance", "Secure Transactions"].map((item) => (
-            <div key={item} className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-center">
-              <p>{item}</p>
-            </div>
-          ))}
+
+      {/* Recommended for You - Carousel */}
+      <div className="section">
+        <h2 className="section-title">Recommended for You</h2>
+        <div
+          className="carousel"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <div
+            className="carousel-track"
+            style={{
+              transform: `translateX(-${offset * 100}%)`,
+              transition: "transform 0.7s ease-in-out",
+            }}
+          >
+            {recommendations.map((item, index) => (
+              <div
+                key={index}
+                className="recommendation-card"
+                style={{
+                  transform: hovered ? "scale(1.05)" : "scale(1)",
+                  transition: "transform 0.3s ease-in-out",
+                }}
+              >
+                <img src={item.image} alt={item.title} className="recommendation-image" />
+                <p className="recommendation-title">{item.title}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
