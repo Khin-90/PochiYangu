@@ -1,46 +1,60 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
+import "../styles/Savings.css";
+
 
 const Savings = () => {
-  const [savingsBalance, setSavingsBalance] = useState("Loading...");
+  // Hardcoded balance & transactions
+  const [savingsBalance, setSavingsBalance] = useState(500); // Start with 500 HBAR
+  const [transactions, setTransactions] = useState([
+    { id: 1, type: "Deposit", amount: 200, date: "2025-03-25" },
+    { id: 2, type: "Withdraw", amount: 100, date: "2025-03-26" },
+    { id: 3, type: "Deposit", amount: 150, date: "2025-03-27" }
+  ]);
+  
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [goal, setGoal] = useState(1000); // Hardcoded savings goal
 
-  useEffect(() => {
-    // Fetch savings balance
-    axios.get("http://localhost:8000/api/savings-balance")
-      .then(response => setSavingsBalance(response.data.balance))
-      .catch(error => console.error("Error fetching savings balance:", error));
-  }, []);
-
+  // Handle Deposit & Withdraw (updates local state only)
   const handleTransaction = (type) => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const numericAmount = parseFloat(amount);
+
+    if (!numericAmount || numericAmount <= 0) {
       setError("Please enter a valid amount.");
       return;
     }
-    if (type === "Withdraw" && parseFloat(amount) > parseFloat(savingsBalance)) {
+    if (type === "Withdraw" && numericAmount > savingsBalance) {
       setError("Insufficient savings balance.");
       return;
     }
 
-    axios.post(`http://localhost:8000/api/${type.toLowerCase()}-savings`, { amount })
-      .then(response => {
-        setSuccess(`${type} Successful!`);
-        setSavingsBalance(type === "Deposit" 
-          ? parseFloat(savingsBalance) + parseFloat(amount) 
-          : parseFloat(savingsBalance) - parseFloat(amount));
-        setAmount("");
-        setError("");
-        setIsDepositOpen(false);
-        setIsWithdrawOpen(false);
-      })
-      .catch(error => {
-        console.error(`${type} failed:`, error);
-        setError(`${type} failed. Try again.`);
-      });
+    // Update balance & transactions
+    const newBalance = type === "Deposit" 
+      ? savingsBalance + numericAmount 
+      : savingsBalance - numericAmount;
+    setSavingsBalance(newBalance);
+
+    const newTransaction = {
+      id: transactions.length + 1,
+      type,
+      amount: numericAmount,
+      date: new Date().toISOString().split("T")[0]
+    };
+    setTransactions([newTransaction, ...transactions]);
+
+    setSuccess(`${type} Successful!`);
+    setAmount("");
+    setError("");
+
+    // Close modal after 1.5s
+    setTimeout(() => {
+      setIsDepositOpen(false);
+      setIsWithdrawOpen(false);
+      setSuccess("");
+    }, 1500);
   };
 
   return (
@@ -53,9 +67,6 @@ const Savings = () => {
           <h2 className="text-xl font-semibold">Savings Balance</h2>
           <p className="text-3xl font-bold mt-2">{savingsBalance} HBAR</p>
         </div>
-        <button onClick={() => window.location.reload()} className="bg-white text-yellow-600 px-4 py-2 rounded shadow-md hover:bg-gray-100">
-          Refresh
-        </button>
       </div>
 
       {/* Action Buttons */}
@@ -66,6 +77,45 @@ const Savings = () => {
         <button onClick={() => setIsWithdrawOpen(true)} className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-md w-full hover:bg-red-600">
           Withdraw
         </button>
+      </div>
+
+      {/* Transaction History */}
+      <div className="mt-6 bg-gray-100 p-4 rounded-lg shadow-md">
+        <h2 className="text-lg font-bold mb-2">Transaction History</h2>
+        {transactions.length > 0 ? (
+          <ul className="text-sm">
+            {transactions.map((tx) => (
+              <li key={tx.id} className="flex justify-between p-2 border-b">
+                <span>{tx.type}</span>
+                <span>{tx.amount} HBAR</span>
+                <span className={tx.type === "Deposit" ? "text-green-500" : "text-red-500"}>
+                  {tx.date}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No recent transactions.</p>
+        )}
+      </div>
+
+      {/* Savings Goal */}
+      <div className="mt-6 bg-blue-100 p-4 rounded-lg shadow-md">
+        <h2 className="text-lg font-bold mb-2">Savings Goal</h2>
+        <p>Target: {goal} HBAR</p>
+        <div className="w-full bg-gray-300 rounded h-4 mt-2">
+          <div
+            className="bg-blue-500 h-4 rounded"
+            style={{ width: `${(savingsBalance / goal) * 100}%` }}
+          ></div>
+        </div>
+        <input 
+          type="number" 
+          value={goal} 
+          onChange={(e) => setGoal(e.target.value)} 
+          className="mt-2 p-2 border rounded w-full"
+          placeholder="Set new goal"
+        />
       </div>
 
       {/* Deposit Modal */}

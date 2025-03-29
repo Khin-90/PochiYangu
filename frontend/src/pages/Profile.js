@@ -1,44 +1,63 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
+import { FaUserCircle, FaCopy, FaSignOutAlt } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import "../styles/Profile.css";
 
 const Profile = () => {
-  const [user, setUser] = useState({
-    name: "Loading...",
-    email: "Loading...",
-    walletId: "Loading...",
-    status: "new",
-  });
+  // Hardcoded User Data (Non-Editable)
+  const user = {
+    name: "John Doe",
+    email: "john.doe@example.com",
+    walletId: "0.0.123456",
+    status: "frequent",
+  };
 
-  useEffect(() => {
-    axios.get("http://localhost:8000/api/user-profile")
-      .then(response => setUser(response.data))
-      .catch(error => console.error("Error fetching profile:", error));
-  }, []);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+
+  // Copy Wallet ID
+  const handleCopyWalletId = () => {
+    navigator.clipboard.writeText(user.walletId);
+    setMessage("Wallet ID copied!");
+    setTimeout(() => setMessage(""), 2000);
+  };
+
+  // Logout Process with Animation and Redirection
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      navigate("/auth"); // Redirect to Auth.js
+    }, 1500);
+  };
 
   return (
-    <div className="p-6 flex justify-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        {/* Profile Header */}
-        <h1 className="text-2xl font-bold mb-4 text-center">Profile</h1>
+    <div className={`profile-container ${isLoggingOut ? "fade-out" : ""}`}>
+      <div className="profile-card">
+        {/* Profile Picture */}
+        <FaUserCircle className="profile-icon" />
+        <h1 className="profile-title">Profile</h1>
 
-        {/* User Info */}
-        <div className="text-center">
-          <p className="text-lg"><strong>Name:</strong> {user.name}</p>
-          <p className="text-lg"><strong>Email:</strong> {user.email}</p>
-          <p className="text-lg"><strong>Wallet ID:</strong> {user.walletId}</p>
-          
-          {/* User Status Badge */}
-          <span className={`inline-block px-3 py-1 mt-3 rounded-full text-white text-sm ${
-            user.status === "frequent" ? "bg-green-500" : "bg-gray-500"
-          }`}>
-            {user.status === "frequent" ? "Frequent User" : "New User"}
-          </span>
+        {/* Hardcoded User Info */}
+        <div className="profile-info">
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p className="wallet-info">
+            <strong>Wallet ID:</strong> {user.walletId}{" "}
+            <FaCopy className="copy-icon" onClick={handleCopyWalletId} />
+          </p>
+          {message && <p className="copy-message">{message}</p>}
         </div>
 
-        {/* Edit Profile Button (For future expansion) */}
-        <div className="mt-6 flex justify-center">
-          <button className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
-            Edit Profile
+        {/* Status Badge */}
+        <span className={`status-badge ${user.status === "frequent" ? "badge-frequent" : "badge-new"}`}>
+          {user.status === "frequent" ? "Frequent User" : "New User"}
+        </span>
+
+        {/* Logout Button */}
+        <div className="profile-buttons">
+          <button className="logout-btn" onClick={handleLogout}>
+            <FaSignOutAlt className="icon" /> Logout
           </button>
         </div>
       </div>

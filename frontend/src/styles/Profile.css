@@ -1,0 +1,170 @@
+/* Profile Container */
+.profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, hsl(0, 12%, 97%)5rgb(250, 244, 243), #fad0c4);
+  }
+  
+  /* Profile Card */
+  .profile-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Profile Picture */
+  .profile-icon {
+    font-size: 60px;
+    color: #777;
+  }
+  
+  /* Buttons */
+  .profile-button {
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+  }
+  
+  .profile-button:hover {
+    opacity: 0.8;
+  }
+  
+  .edit-btn {
+    background: #4caf50;
+    color: white;
+  }
+  
+  .logout-btn {
+    background: #e74c3c;
+    color: white;
+  }
+  
+  /* Success Message */
+  .success-message {
+    color: #27ae60;
+    font-weight: bold;
+  }
+  /* Profile Container */
+.profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    transition: opacity 1s ease;
+  }
+  
+  /* Fade-out effect when logging out */
+  .fade-out {
+    opacity: 0;
+  }
+  
+  /* Profile Card */
+  .profile-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  
+  .profile-card:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Profile Icon */
+  .profile-icon {
+    font-size: 80px;
+    color: #777;
+    margin-bottom: 15px;
+  }
+  
+  /* Profile Title */
+  .profile-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  /* Profile Info */
+  .profile-info p {
+    font-size: 1.1rem;
+    margin: 8px 0;
+    color: #555;
+  }
+  
+  /* Wallet Info */
+  .wallet-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .copy-icon {
+    font-size: 1.2rem;
+    margin-left: 8px;
+    cursor: pointer;
+    color: #888;
+    transition: color 0.2s ease;
+  }
+  
+  .copy-icon:hover {
+    color: #333;
+  }
+  
+  .copy-message {
+    color: #27ae60;
+    font-weight: bold;
+    margin-top: 5px;
+  }
+  
+  /* Status Badge */
+  .status-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    color: white;
+    font-size: 0.9rem;
+    margin-top: 15px;
+  }
+  
+  .badge-frequent {
+    background: #27ae60;
+  }
+  
+  .badge-new {
+    background: #7f8c8d;
+  }
+  
+  /* Logout Button */
+  .logout-btn {
+    background: #e74c3c;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+  }
+  
+  .logout-btn:hover {
+    background: #c0392b;
+  }
+  
+  .icon {
+    margin-right: 8px;
+    font-size: 1.2rem;
+  }
+  
