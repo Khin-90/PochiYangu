@@ -1,19 +1,70 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-.dashboard-card {
-  @apply bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg;
-}
-
-.section-title {
-  @apply text-lg font-semibold mb-4 border-b border-white/20 pb-2;
-}
-
-.contract-item {
-  @apply px-4 py-2 rounded-lg hover:bg-white/10 cursor-pointer transition-colors;
-}
-
-.security-account {
-  @apply bg-white/10 px-4 py-3 rounded-lg font-mono hover:bg-white/20 transition-colors;
-}
+body {
+    font-family: "Arial", sans-serif;
+    background-color: #f3f4f6;
+  }
+  
+  aside {
+    width: 250px;
+    background: #fff;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  nav ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  nav li {
+    margin-bottom: 10px;
+  }
+  
+  nav a {
+    display: block;
+    text-decoration: none;
+    color: #333;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background 0.3s;
+  }
+  
+  nav a:hover {
+    background: #f0f0f0;
+  }
+  
+  .search-bar {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .financial-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .graph-container {
+    width: 100%;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .contact-list div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .contact-list div img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  

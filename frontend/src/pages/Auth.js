@@ -1,51 +1,68 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
+import "../styles/Auth.css"; // Import the CSS for styling
 
 export default function Auth({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false); // Toggle between login & signup
   const [error, setError] = useState(null);
 
   const handleAuth = (e) => {
     e.preventDefault();
 
-    // Hardcoded authentication check
-    if (email === "hinzanno@gmail.com" && password === "admin") {
-      onLogin(); // Call the onLogin function (sets the user as authenticated)
+    if (!isSignUp) {
+      // Hardcoded authentication check for login
+      if (email === "hinzanno@gmail.com" && password === "admin") {
+        onLogin();
+      } else {
+        setError("Invalid email or password");
+      }
     } else {
-      setError("Invalid email or password");
+      // Handle signup logic (for now, just switch to login mode)
+      setIsSignUp(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 backdrop-blur-md">
-      <div className="bg-white p-8 shadow-lg rounded-lg w-96">
-        <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        <form onSubmit={handleAuth}>
+    <div className="auth-overlay">
+      <motion.div 
+        className="auth-container"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="auth-title">Pochi</h2>
+        {error && <p className="error-message">{error}</p>}
+        
+        <form onSubmit={handleAuth} className="auth-form">
+          <label>Username</label>
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded mb-4"
             required
           />
+          
+          <label>Password</label>
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded mb-4"
             required
           />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded"
-          >
-            Login
+
+          <button type="submit" className="auth-button">
+            {isSignUp ? "Sign Up" : "Get started"}
           </button>
+
+          <p className="auth-toggle" onClick={() => setIsSignUp(!isSignUp)}>
+            {isSignUp ? "Already have an account? Login" : "Sign up"}
+          </p>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }
