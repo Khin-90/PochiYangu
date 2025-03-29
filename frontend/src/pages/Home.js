@@ -1,4 +1,3 @@
-// Home.js
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
@@ -129,7 +128,7 @@ const Home = () => {
           <Button variant="contained" className="upgrade-plan">
             UPGRADE PLAN
           </Button>
-          {/* Added graph placeholder as seen in the old version */}
+          {/* Graph placeholder to be replaced with an actual chart if needed */}
           <div className="graph-placeholder">Graph Here</div>
         </section>
       </main>

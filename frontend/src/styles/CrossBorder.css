@@ -1,0 +1,116 @@
+/* General Styling */
+.cross-border-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Card Styling */
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Exchange Graph Styling */
+.exchange-graph {
+    width: 100%;
+    height: 250px;
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Send Money Form - Glassmorphism */
+.send-money-form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    border-radius: 12px;
+    padding: 25px;
+    width: 350px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Active Form State */
+.send-money-form.active {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Form Input Styling */
+.send-money-form input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+.send-money-form input:focus {
+    border-color: #ff7b00;
+    box-shadow: 0 0 5px rgba(255, 123, 0, 0.5);
+}
+
+/* Send Button Animation */
+.send-button {
+    background: #ff7b00;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+    border: none;
+    font-size: 16px;
+}
+
+.send-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(255, 123, 0, 0.4);
+}
+
+.send-button:active {
+    transform: scale(0.95);
+}
+
+/* Cancel Button */
+.cancel-button {
+    background: #ddd;
+    color: black;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+    border: none;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.cancel-button:hover {
+    transform: scale(1.05);
+}
+
+.cancel-button:active {
+    transform: scale(0.95);
+}

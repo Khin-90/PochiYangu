@@ -11,8 +11,9 @@ import ApplyLoan from "./pages/ApplyLoan";
 import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import Explore from "./pages/Explore";
-import Auth from "./pages/Auth";
+import Auth from "./pages/Auth"; // Import Auth component
 import BillingDashboard from "./pages/BillingDashboard";
+import CrossBorder from "./pages/CrossBorder";
 import "./App.css";
 import LoanManagement from "./pages/LoanManagement";
 
@@ -25,76 +26,113 @@ function App() {
 
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
-        <div className="flex-grow p-6">
+      <div className="app-container">
+        <div className="main-content-container">
           <AnimatePresence mode="wait">
             <Routes>
-              {/* Authentication Route */}
               <Route
                 path="/"
-                element={
-                  !isAuthenticated ? (
-                    <Auth onLogin={() => setIsAuthenticated(true)} />
-                  ) : (
-                    <Navigate to="/home" replace />
-                  )
-                }
+                element={<Auth setIsAuthenticated={setIsAuthenticated} />}
               />
-
-              {/* Protected Routes */}
               <Route
                 path="/home"
                 element={
                   <PrivateRoute
+                    element={<AnimatedPage component={Home} />}
                     isAuthenticated={isAuthenticated}
-                    element={
-                      <motion.div
-                        initial={{ x: "100vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: "-100vw", opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                      >
-                        <Home />
-                      </motion.div>
-                    }
                   />
                 }
               />
-
-              {/* Other Protected Routes */}
-              {[
-                { path: "/wallet", component: Wallet },
-                { path: "/transfer", component: Transfer },
-                { path: "/request-payment", component: RequestPayment },
-                { path: "/savings", component: Savings },
-                { path: "/repay-loan", component: RepayLoan },
-                { path: "/apply-loan", component: ApplyLoan },
-                { path: "/profile", component: Profile },
-                { path: "/transactions", component: Transactions },
-                { path: "/explore", component: Explore },
-                { path: "/billing-dashboard", component: BillingDashboard },
-                { path: "/loanManagement", component: LoanManagement },
-              ].map((route) => (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={
-                    <PrivateRoute
-                      isAuthenticated={isAuthenticated}
-                      element={
-                        <motion.div
-                          initial={{ x: "100vw", opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          exit={{ x: "-100vw", opacity: 0 }}
-                          transition={{ duration: 0.6, ease: "easeInOut" }}
-                        >
-                          <route.component />
-                        </motion.div>
-                      }
-                    />
-                  }
-                />
-              ))}
+              <Route
+                path="/wallet"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={Wallet} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/transfer"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={Transfer} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/request-payment"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={RequestPayment} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/savings"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={Savings} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/repay-loan"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={RepayLoan} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/apply-loan"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={ApplyLoan} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={Profile} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/transactions"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={Transactions} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/billing-dashboard"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={BillingDashboard} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/cross-border"
+                element={
+                  <PrivateRoute
+                    element={<AnimatedPage component={CrossBorder} />}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
             </Routes>
           </AnimatePresence>
         </div>
@@ -102,5 +140,16 @@ function App() {
     </Router>
   );
 }
+
+const AnimatedPage = ({ component: Component }) => (
+  <motion.div
+    initial={{ x: "100vw", opacity: 0 }}
+    animate={{ x: 0, opacity: 1 }}
+    exit={{ x: "-100vw", opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeInOut" }}
+  >
+    <Component />
+  </motion.div>
+);
 
 export default App;

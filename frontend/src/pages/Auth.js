@@ -1,25 +1,28 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import "../styles/Auth.css"; // Import the CSS for styling
+import { useNavigate } from "react-router-dom";
+import "../styles/Auth.css";
 
-export default function Auth({ onLogin }) {
+export default function Auth({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false); // Toggle between login & signup
+  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleAuth = (e) => {
     e.preventDefault();
 
     if (!isSignUp) {
-      // Hardcoded authentication check for login
+      // Login logic
       if (email === "hinzanno@gmail.com" && password === "admin") {
-        onLogin();
+        setIsAuthenticated(true);
+        navigate("/home");
       } else {
         setError("Invalid email or password");
       }
     } else {
-      // Handle signup logic (for now, just switch to login mode)
+      // Handle signup (placeholder)
       setIsSignUp(false);
     }
   };
