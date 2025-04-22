@@ -176,7 +176,7 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium">Low transaction fees</span>
+                    <span className="text-sm font-semibold text-gray-700">Simple to Use</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-green-500 p-1">
@@ -195,7 +195,7 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium">24/7 customer support</span>
+                    <span className="text-sm font-semibold text-gray-700">Complete Financial Control</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-green-500 p-1">
@@ -214,7 +214,7 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium">Bank-level security</span>
+                    <span className="text-sm font-semibold text-gray-700">Security First</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-green-500 p-1">
@@ -233,58 +233,20 @@ export default function Home() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium">User-friendly interface</span>
+                    <span className="text-sm font-semibold text-gray-700">Instant Transactions</span>
                   </li>
                 </ul>
-              </div>
-              <div className="flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=400&width=400"
-                  alt="PochiYangu Mobile App"
-                  width={400}
-                  height={400}
-                  className="rounded-lg object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Get Started?</h2>
-                <p className="max-w-[600px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                  Join thousands of users who are already managing their finances with PochiYangu
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Link href="/signup">
-                  <Button size="lg">Create Your Account</Button>
-                </Link>
-                <Link href="/contact">
-                  <Button size="lg" variant="outline">
-                    Contact Sales
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>
         </section>
       </main>
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full border-t px-4 md:px-6">
-        <p className="text-xs text-gray-500 dark:text-gray-400">© 2023 PochiYangu. All rights reserved.</p>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
-            Terms of Service
-          </Link>
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
-            Privacy
-          </Link>
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
-            Cookies
-          </Link>
-        </nav>
+      <footer className="bg-gray-800 text-white py-6">
+        <div className="container px-4 md:px-6">
+          <div className="flex justify-center">
+            <p className="text-center text-sm">&copy; 2025 PochiYangu. All rights reserved.</p>
+          </div>
+        </div>
       </footer>
     </div>
   )

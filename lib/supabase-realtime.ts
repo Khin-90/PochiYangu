@@ -1,7 +1,36 @@
 import { supabase } from "./supabase"
 
+// Define types for transactions, contributions, messages, and notifications to improve type safety
+interface Transaction {
+  user_id: string;
+  amount: number;
+  description: string;
+  created_at: string;
+}
+
+interface ChamaContribution {
+  chama_id: string;
+  user_id: string;
+  amount: number;
+  due_date: string;
+}
+
+interface ChamaMessage {
+  chama_id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
+}
+
+interface Notification {
+  user_id: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 // Subscribe to real-time transaction updates
-export const subscribeToTransactions = (userId: string, callback: (transaction: any) => void) => {
+export const subscribeToTransactions = (userId: string, callback: (transaction: Transaction) => void) => {
   const channel = supabase
     .channel("transactions-channel")
     .on(
@@ -13,8 +42,10 @@ export const subscribeToTransactions = (userId: string, callback: (transaction: 
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        callback(payload.new)
-      },
+        if (payload.new) {
+          callback(payload.new as Transaction)
+        }
+      }
     )
     .subscribe()
 
@@ -25,7 +56,7 @@ export const subscribeToTransactions = (userId: string, callback: (transaction: 
 }
 
 // Subscribe to real-time Chama contribution updates
-export const subscribeToChamaContributions = (chamaId: string, callback: (contribution: any) => void) => {
+export const subscribeToChamaContributions = (chamaId: string, callback: (contribution: ChamaContribution) => void) => {
   const channel = supabase
     .channel("chama-contributions-channel")
     .on(
@@ -37,8 +68,10 @@ export const subscribeToChamaContributions = (chamaId: string, callback: (contri
         filter: `chama_id=eq.${chamaId}`,
       },
       (payload) => {
-        callback(payload.new)
-      },
+        if (payload.new) {
+          callback(payload.new as ChamaContribution)
+        }
+      }
     )
     .subscribe()
 
@@ -49,7 +82,7 @@ export const subscribeToChamaContributions = (chamaId: string, callback: (contri
 }
 
 // Subscribe to real-time Chama messages
-export const subscribeToChamaMessages = (chamaId: string, callback: (message: any) => void) => {
+export const subscribeToChamaMessages = (chamaId: string, callback: (message: ChamaMessage) => void) => {
   const channel = supabase
     .channel("chama-messages-channel")
     .on(
@@ -61,8 +94,10 @@ export const subscribeToChamaMessages = (chamaId: string, callback: (message: an
         filter: `chama_id=eq.${chamaId}`,
       },
       (payload) => {
-        callback(payload.new)
-      },
+        if (payload.new) {
+          callback(payload.new as ChamaMessage)
+        }
+      }
     )
     .subscribe()
 
@@ -73,7 +108,7 @@ export const subscribeToChamaMessages = (chamaId: string, callback: (message: an
 }
 
 // Subscribe to real-time notifications
-export const subscribeToNotifications = (userId: string, callback: (notification: any) => void) => {
+export const subscribeToNotifications = (userId: string, callback: (notification: Notification) => void) => {
   const channel = supabase
     .channel("notifications-channel")
     .on(
@@ -85,8 +120,10 @@ export const subscribeToNotifications = (userId: string, callback: (notification
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        callback(payload.new)
-      },
+        if (payload.new) {
+          callback(payload.new as Notification)
+        }
+      }
     )
     .subscribe()
 
