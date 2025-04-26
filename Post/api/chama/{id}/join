@@ -1,10 +1,21 @@
 // Handles chama joining process
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const { user } = await auth();
-  
-  // Step 1: Check if invitation exists
-  // Step 2: Verify rules acceptance
-  // Step 3: Create membership record
-  // Step 4: Schedule contributions
-  // Return success status
+  try {
+    // Only when POST is actually called, not at build time
+    const { user } = await auth();
+    
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
+
+    // Step 1: Check if invitation exists
+    // Step 2: Verify rules acceptance
+    // Step 3: Create membership record
+    // Step 4: Schedule contributions
+
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  } catch (error) {
+    console.error('Error joining chama:', error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
+  }
 }
