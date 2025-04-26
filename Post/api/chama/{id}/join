@@ -1,7 +1,14 @@
+// /api/chamas/[id]/join/route.ts
+
+// 🛡️ Tell Next.js: this route is dynamic, don't preload at build time
+export const dynamic = 'force-dynamic';
+
 // Handles chama joining process
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    // Only when POST is actually called, not at build time
+    // 🛡️ Import auth only when POST is called
+    const { auth } = await import('@/lib/auth'); // Adjust path if needed
+    
     const { user } = await auth();
     
     if (!user) {
