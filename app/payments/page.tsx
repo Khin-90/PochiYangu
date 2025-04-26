@@ -1,20 +1,108 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { 
+  ArrowRight,
+  Banknote,
+  CreditCard,
+  DollarSign,
+  Globe,
+  Menu,
+  Plus,
+  RefreshCw,
+  Send,
+  Smartphone,
+  Users 
+} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, DollarSign, Globe, Menu, RefreshCw, Send, Users } from "lucide-react"
-
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function PaymentsPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [recipients, setRecipients] = useState<any[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
+  const [formData, setFormData] = useState({
+    amount: '',
+    currency: 'KES',
+    recipient: '',
+    paymentMethod: '',
+    note: ''
+  })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return router.push('/login')
+      
+      setUser(user)
+
+      const { data: recipientsData } = await supabase
+        .from('recipients')
+        .select('*')
+        .eq('user_id', user.id)
+
+      const { data: methodsData } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('user_id', user.id)
+
+      setRecipients(recipientsData || [])
+      setPaymentMethods(methodsData || [])
+    }
+
+    fetchData()
+  }, [router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const amount = parseFloat(formData.amount)
+    if (isNaN(amount)) {
+      alert("Please enter a valid amount")
+      return
+    }
+
+    const fee = amount * 0.015 // 1.5% fee
+
+    const { error } = await supabase.from('transactions').insert([{
+      user_id: user.id,
+      amount: amount,
+      currency: formData.currency,
+      fee: fee,
+      status: 'pending',
+      payment_method_id: formData.paymentMethod
+    }])
+
+    if (error) {
+      console.error('Transaction failed:', error)
+      return
+    }
+
+    // Redirect to transaction status page
+    router.push('/dashboard/transactions')
+  }
+
+  const getInitials = () => {
+    if (!user) return ''
+    const meta = user.user_metadata
+    return `${meta?.first_name?.[0] || ''}${meta?.last_name?.[0] || ''}`.toUpperCase()
+  }
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <div className="flex min-h-screen flex-col bg-sky-50">
+      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="md:hidden">
@@ -24,9 +112,9 @@ export default function PaymentsPage() {
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col">
             <nav className="grid gap-2 text-lg font-medium">
-              <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
+              <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-sky-600">
                 <Image
-                  src="/placeholder.svg?height=40&width=40"
+                  src="/logo.svg"
                   alt="PochiYangu Logo"
                   width={40}
                   height={40}
@@ -34,31 +122,15 @@ export default function PaymentsPage() {
                 />
                 <span>PochiYangu</span>
               </Link>
-              <Link
-                href="/"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
-                <DollarSign className="h-5 w-5" />
-                Home
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
+              <Link href="/dashboard" className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 hover:text-sky-600">
                 <DollarSign className="h-5 w-5" />
                 Dashboard
               </Link>
-              <Link
-                href="/payments"
-                className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-gray-900 transition-all hover:text-gray-900 dark:bg-gray-800 dark:text-gray-50 dark:hover:text-gray-50"
-              >
+              <Link href="/payments" className="flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-2 text-sky-600">
                 <Send className="h-5 w-5" />
                 Payments
               </Link>
-              <Link
-                href="/chama"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
+              <Link href="/chama" className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 hover:text-sky-600">
                 <Users className="h-5 w-5" />
                 Chama Groups
               </Link>
@@ -67,7 +139,7 @@ export default function PaymentsPage() {
         </Sheet>
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
           <Image
-            src="/placeholder.svg?height=40&width=40"
+            src="/logo.svg"
             alt="PochiYangu Logo"
             width={40}
             height={40}
@@ -76,347 +148,187 @@ export default function PaymentsPage() {
           <span className="hidden md:inline">PochiYangu</span>
         </Link>
         <nav className="hidden md:flex md:gap-2 lg:gap-4">
-          <Link
-            href="/"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-          >
+          <Link href="/dashboard" className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 hover:text-sky-600">
             <DollarSign className="h-5 w-5" />
-            <span>Home</span>
+            Dashboard
           </Link>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-          >
-            <DollarSign className="h-5 w-5" />
-            <span>Dashboard</span>
-          </Link>
-          <Link
-            href="/payments"
-            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-gray-900 transition-all hover:text-gray-900 dark:bg-gray-800 dark:text-gray-50 dark:hover:text-gray-50"
-          >
+          <Link href="/payments" className="flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-2 text-sky-600">
             <Send className="h-5 w-5" />
-            <span>Payments</span>
+            Payments
           </Link>
-          <Link
-            href="/chama"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-          >
+          <Link href="/chama" className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 hover:text-sky-600">
             <Users className="h-5 w-5" />
-            <span>Chama Groups</span>
+            Chama Groups
           </Link>
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <Avatar>
-            <AvatarImage src="/placeholder-user.jpg" alt="User" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarImage src={user?.user_metadata?.avatar_url} />
+            <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
         </div>
       </header>
+
       <main className="flex-1 p-4 md:p-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Cross-Border Payments</h1>
-              <p className="text-muted-foreground">Send money globally with low fees and competitive exchange rates.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Transaction History
-              </Button>
-              <Button>
-                <Send className="mr-2 h-4 w-4" />
-                New Payment
-              </Button>
-            </div>
-          </div>
+        <div className="mx-auto max-w-3xl">
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-sky-100">
+            <h1 className="text-2xl font-bold text-sky-900 mb-6">Send Money</h1>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-sky-700">Recipient</Label>
+                <Select
+                  value={formData.recipient}
+                  onValueChange={value => setFormData({...formData, recipient: value})}
+                >
+                  <SelectTrigger className="border-sky-200">
+                    <SelectValue placeholder="Select recipient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipients.map(recipient => (
+                      <SelectItem key={recipient.id} value={recipient.id}>
+                        {recipient.name} ({recipient.country})
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New Recipient
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Tabs defaultValue="send" className="mt-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="send">Send Money</TabsTrigger>
-              <TabsTrigger value="request">Request Money</TabsTrigger>
-              <TabsTrigger value="exchange">Currency Exchange</TabsTrigger>
-            </TabsList>
-            <TabsContent value="send" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Send Money Internationally</CardTitle>
-                  <CardDescription>Transfer funds to friends, family, or businesses worldwide.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="recipient">Recipient</Label>
-                      <Select>
-                        <SelectTrigger id="recipient">
-                          <SelectValue placeholder="Select recipient" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">Add New Recipient</SelectItem>
-                          <SelectItem value="john">John Smith</SelectItem>
-                          <SelectItem value="maria">Maria Garcia</SelectItem>
-                          <SelectItem value="ahmed">Ahmed Hassan</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="payment-method">Payment Method</Label>
-                      <Select>
-                        <SelectTrigger id="payment-method">
-                          <SelectValue placeholder="Select payment method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="balance">PochiYangu Balance</SelectItem>
-                          <SelectItem value="bank">Bank Account</SelectItem>
-                          <SelectItem value="card">Debit/Credit Card</SelectItem>
-                          <SelectItem value="mpesa">M-Pesa</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="amount">You Send</Label>
-                      <div className="flex">
-                        <Select>
-                          <SelectTrigger className="w-[100px] rounded-r-none">
-                            <SelectValue placeholder="USD" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="usd">USD</SelectItem>
-                            <SelectItem value="eur">EUR</SelectItem>
-                            <SelectItem value="gbp">GBP</SelectItem>
-                            <SelectItem value="kes">KES</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input id="amount" type="number" placeholder="0.00" className="rounded-l-none" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="receive-amount">They Receive</Label>
-                      <div className="flex">
-                        <Select>
-                          <SelectTrigger className="w-[100px] rounded-r-none">
-                            <SelectValue placeholder="KES" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="kes">KES</SelectItem>
-                            <SelectItem value="usd">USD</SelectItem>
-                            <SelectItem value="eur">EUR</SelectItem>
-                            <SelectItem value="gbp">GBP</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input id="receive-amount" type="number" placeholder="0.00" className="rounded-l-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border bg-muted/50 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Exchange Rate</span>
-                      <span className="font-medium">1 USD = 130.25 KES</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-sm">Transfer Fee</span>
-                      <span className="font-medium">$2.99</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-sm">Delivery Time</span>
-                      <span className="font-medium">1-2 Business Days</span>
-                    </div>
-                    <div className="mt-2 pt-2 border-t flex items-center justify-between">
-                      <span className="text-sm font-medium">Total to Pay</span>
-                      <span className="font-bold">$102.99</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="purpose">Purpose of Payment</Label>
-                    <Select>
-                      <SelectTrigger id="purpose">
-                        <SelectValue placeholder="Select purpose" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sky-700">Amount</Label>
+                  <div className="flex">
+                    <Select
+                      value={formData.currency}
+                      onValueChange={value => setFormData({...formData, currency: value})}
+                    >
+                      <SelectTrigger className="w-[100px] border-sky-200 rounded-r-none">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="family">Family Support</SelectItem>
-                        <SelectItem value="business">Business</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
-                        <SelectItem value="medical">Medical</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="KES">KES</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Input
+                      type="number"
+                      className="rounded-l-none border-sky-200"
+                      value={formData.amount}
+                      onChange={e => setFormData({...formData, amount: e.target.value})}
+                      placeholder="0.00"
+                    />
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline">Save as Draft</Button>
-                  <Button>
-                    Continue
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-            <TabsContent value="request" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Request Money</CardTitle>
-                  <CardDescription>Request funds from anyone, anywhere in the world.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="request-from">Request From</Label>
-                    <Input id="request-from" placeholder="Email or mobile number" />
-                  </div>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="request-amount">Amount</Label>
-                      <div className="flex">
-                        <Select>
-                          <SelectTrigger className="w-[100px] rounded-r-none">
-                            <SelectValue placeholder="USD" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="usd">USD</SelectItem>
-                            <SelectItem value="eur">EUR</SelectItem>
-                            <SelectItem value="gbp">GBP</SelectItem>
-                            <SelectItem value="kes">KES</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input id="request-amount" type="number" placeholder="0.00" className="rounded-l-none" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="request-reason">Reason (Optional)</Label>
-                      <Input id="request-reason" placeholder="e.g., Dinner last night" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="request-note">Note to Recipient</Label>
-                    <Input id="request-note" placeholder="Add a personal note" />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">Request Payment</Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-            <TabsContent value="exchange" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Currency Exchange</CardTitle>
-                  <CardDescription>Convert between currencies at competitive rates.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="from-currency">From</Label>
-                      <div className="flex">
-                        <Select>
-                          <SelectTrigger className="w-[100px] rounded-r-none">
-                            <SelectValue placeholder="USD" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="usd">USD</SelectItem>
-                            <SelectItem value="eur">EUR</SelectItem>
-                            <SelectItem value="gbp">GBP</SelectItem>
-                            <SelectItem value="kes">KES</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input id="from-currency" type="number" placeholder="0.00" className="rounded-l-none" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="to-currency">To</Label>
-                      <div className="flex">
-                        <Select>
-                          <SelectTrigger className="w-[100px] rounded-r-none">
-                            <SelectValue placeholder="KES" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="kes">KES</SelectItem>
-                            <SelectItem value="usd">USD</SelectItem>
-                            <SelectItem value="eur">EUR</SelectItem>
-                            <SelectItem value="gbp">GBP</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input id="to-currency" type="number" placeholder="0.00" className="rounded-l-none" disabled />
-                      </div>
-                    </div>
-                  </div>
+                </div>
 
-                  <div className="rounded-lg border bg-muted/50 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Exchange Rate</span>
-                      <span className="font-medium">1 USD = 130.25 KES</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-sm">Fee</span>
-                      <span className="font-medium">$1.99</span>
-                    </div>
-                    <div className="mt-2 pt-2 border-t flex items-center justify-between">
-                      <span className="text-sm font-medium">You'll receive</span>
-                      <span className="font-bold">13,025.00 KES</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">Exchange Currency</Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                <div className="space-y-2">
+                  <Label className="text-sky-700">Payment Method</Label>
+                  <Select
+                    value={formData.paymentMethod}
+                    onValueChange={value => setFormData({...formData, paymentMethod: value})}
+                  >
+                    <SelectTrigger className="border-sky-200">
+                      <SelectValue placeholder="Select method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethods.map(method => (
+                        <SelectItem key={method.id} value={method.id}>
+                          {method.type === 'mpesa' && `M-Pesa ••• ${method.details.phone?.slice(-4)}`}
+                          {method.type === 'card' && `Card ••• ${method.details.last4}`}
+                          {method.type === 'bank' && method.details.bank_name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Payment Method
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Global Coverage</CardTitle>
-                <Globe className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">200+</div>
-                <p className="text-xs text-muted-foreground">Countries and territories</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Competitive Rates</CardTitle>
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Up to 4%</div>
-                <p className="text-xs text-muted-foreground">Better than bank exchange rates</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Fast Transfers</CardTitle>
-                <Send className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1-2 Days</div>
-                <p className="text-xs text-muted-foreground">For most international transfers</p>
-              </CardContent>
-            </Card>
+              <div className="space-y-2">
+                <Label className="text-sky-700">Note (optional)</Label>
+                <Input
+                  className="border-sky-200"
+                  value={formData.note}
+                  onChange={e => setFormData({...formData, note: e.target.value})}
+                  placeholder="Add a personal message"
+                />
+              </div>
+
+              <div className="bg-sky-50 p-4 rounded-lg border border-sky-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-sky-700">Transfer Fee:</span>
+                  <span className="font-medium text-sky-900">
+                    {formData.amount ? (parseFloat(formData.amount) * 0.015).toFixed(2) : 0.00} {formData.currency}
+                  </span>
+                </div>
+                <div className="mt-2 pt-2 border-t border-sky-100 flex justify-between items-center">
+                  <span className="text-sky-700 font-medium">Total:</span>
+                  <span className="text-xl font-bold text-sky-900">
+                    {formData.amount ? (parseFloat(formData.amount) * 1.015).toFixed(2) : 0.00} {formData.currency}
+                  </span>
+                </div>
+              </div>
+
+              <Button 
+                type="submit"
+                className="w-full bg-sky-600 hover:bg-sky-700 h-12 text-lg"
+              >
+                Send Payment
+              </Button>
+            </form>
           </div>
 
-          <div className="mt-8">
-            <h2 className="text-xl font-bold">Recent Recipients</h2>
-            <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {[
-                { name: "John Smith", country: "United States", image: "/placeholder-user.jpg" },
-                { name: "Maria Garcia", country: "Mexico", image: "/placeholder-user.jpg" },
-                { name: "Ahmed Hassan", country: "Egypt", image: "/placeholder-user.jpg" },
-                { name: "Li Wei", country: "China", image: "/placeholder-user.jpg" },
-              ].map((recipient, index) => (
-                <Button key={index} variant="outline" className="flex flex-col items-center justify-center h-auto p-4">
-                  <Avatar className="h-12 w-12 mb-2">
-                    <AvatarImage src={recipient.image || "/placeholder.svg"} alt={recipient.name} />
-                    <AvatarFallback>{recipient.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">{recipient.name}</span>
-                  <span className="text-xs text-muted-foreground">{recipient.country}</span>
-                </Button>
+          {/* Payment Methods Section */}
+          <div className="mt-8 bg-white rounded-2xl shadow-sm p-6 border border-sky-100">
+            <h2 className="text-xl font-bold text-sky-900 mb-4">Your Payment Methods</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {paymentMethods.map(method => (
+                <div key={method.id} className="p-4 border border-sky-200 rounded-lg hover:border-sky-300 transition-colors">
+                  <div className="flex items-center gap-4">
+                    {method.type === 'mpesa' && (
+                      <div className="bg-sky-100 p-2 rounded-full">
+                        <Smartphone className="h-6 w-6 text-sky-600" />
+                      </div>
+                    )}
+                    {method.type === 'card' && (
+                      <div className="bg-sky-100 p-2 rounded-full">
+                        <CreditCard className="h-6 w-6 text-sky-600" />
+                      </div>
+                    )}
+                    {method.type === 'bank' && (
+                      <div className="bg-sky-100 p-2 rounded-full">
+                        <Banknote className="h-6 w-6 text-sky-600" />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-medium text-sky-900">
+                        {method.type === 'mpesa' && `M-Pesa ••• ${method.details.phone?.slice(-4)}`}
+                        {method.type === 'card' && `Card ••• ${method.details.last4}`}
+                        {method.type === 'bank' && method.details.bank_name}
+                      </h3>
+                      <p className="text-sm text-sky-500">
+                        {method.is_default && 'Default • '}
+                        Added {new Date(method.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ))}
+              <Button 
+                variant="outline"
+                className="h-full border-sky-200 text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                onClick={() => router.push('/add-payment-method')}
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                Add New Method
+              </Button>
             </div>
           </div>
         </div>

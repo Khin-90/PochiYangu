@@ -1,0 +1,10 @@
+// Handles chama joining process
+export async function POST(req: Request, { params }: { params: { id: string } }) {
+  const { user } = await auth();
+  
+  // Step 1: Check if invitation exists
+  // Step 2: Verify rules acceptance
+  // Step 3: Create membership record
+  // Step 4: Schedule contributions
+  // Return success status
+}

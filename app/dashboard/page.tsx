@@ -1,407 +1,367 @@
-import Link from "next/link"
-import Image from "next/image"
-import {
-  ArrowDown,
-  ArrowUp,
-  BarChart3,
-  CreditCard,
-  DollarSign,
-  Home,
-  Menu,
-  PieChart,
-  Plus,
-  Settings,
-} from "lucide-react"
+"use client"
 
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { DollarSign, Send, Settings, TrendingDown, TrendingUp, Users, Clock, Calendar } from "lucide-react"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Bar } from "react-chartjs-2"
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from "chart.js"
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+
+function HeaderNav() {
+  return (
+    <div className="flex items-center justify-between px-4 py-3 md:px-6 bg-white dark:bg-gray-900 border-b">
+      <Link href="/" className="flex items-center gap-2">
+        <img src="/logo.png" alt="Logo" className="h-8 w-8" />
+        <span className="text-lg font-bold text-gray-800 dark:text-white">
+          PochiYangu
+        </span>
+      </Link>
+
+      <nav className="hidden md:flex md:gap-4">
+        <Link href="/" className="flex items-center gap-2 rounded-md px-3 py-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+          <DollarSign className="h-5 w-5" />
+          <span>Home</span>
+        </Link>
+        <Link href="/dashboard" className="flex items-center gap-2 rounded-md px-3 py-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+          <DollarSign className="h-5 w-5" />
+          <span>Dashboard</span>
+        </Link>
+        <Link href="/payments" className="flex items-center gap-2 rounded-md px-3 py-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+          <Send className="h-5 w-5" />
+          <span>Payments</span>
+        </Link>
+        <Link href="/chama" className="flex items-center gap-2 rounded-md px-3 py-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+          <Send className="h-5 w-5" />
+          <span>Chama</span>
+        </Link>
+      </nav>
+
+      <div className="flex items-center gap-4">
+        <Link href="/settings" className="rounded-full p-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+          <Settings className="h-6 w-6" />
+        </Link>
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-100">
+          KY
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
+  const [loading, setLoading] = useState(true)
+  const [selectedFilter, setSelectedFilter] = useState('24h')
+  const [dashboardData, setDashboardData] = useState({
+    totalBalance: 0,
+    chamaContributions: 0,
+    expenses: 0,
+    savings: 0,
+    transactions: [] as any[],
+    accounts: [] as any[],
+    goals: [] as any[],
+    bills: [] as any[],
+    chamas: [] as any[]
+  })
+
+  const [chartData, setChartData] = useState({
+    labels: [] as string[],
+    datasets: [{
+      label: 'Expenses',
+      data: [] as number[],
+      backgroundColor: '#3B82F6',
+    }]
+  })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const [
+          { data: accounts },
+          { data: transactions },
+          { data: goals },
+          { data: bills },
+          { data: chamas }
+        ] = await Promise.all([
+          supabase.from('accounts').select('*').eq('user_id', user.id),
+          supabase.from('transactions').select('*').eq('user_id', user.id).order('transaction_date', { ascending: false }),
+          supabase.from('savings_goals').select('*').eq('user_id', user.id),
+          supabase.from('bills').select('*').eq('user_id', user.id).order('due_date', { ascending: true }),
+          supabase.from('chamas').select('*').eq('user_id', user.id)
+        ])
+
+        const totalBalance = accounts?.reduce((sum: number, acc: any) => sum + acc.balance, 0) || 0
+        const expenses = transactions?.filter((t: any) => t.transaction_type === 'expense').reduce((sum: number, t: any) => sum + t.amount, 0) || 0
+        const savings = goals?.reduce((sum: number, goal: any) => sum + goal.current_amount, 0) || 0
+        const chamaContributions = chamas?.reduce((sum: number, chama: any) => sum + chama.contribution_amount, 0) || 0
+
+        const transactionDates = transactions?.map((t: any) => 
+          new Date(t.transaction_date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          })
+        ) || []
+
+        const expenseAmounts = transactions?.filter((t: any) => t.transaction_type === 'expense').map((t: any) => t.amount) || []
+
+        setChartData({
+          labels: transactionDates,
+          datasets: [{
+            label: 'Expenses',
+            data: expenseAmounts,
+            backgroundColor: '#3B82F6',
+          }]
+        })
+
+        setDashboardData({
+          totalBalance,
+          chamaContributions,
+          expenses,
+          savings,
+          transactions: transactions || [],
+          accounts: accounts || [],
+          goals: goals || [],
+          bills: bills || [],
+          chamas: chamas || []
+        })
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+
+    const subscription = supabase.channel('realtime-transactions')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'transactions'
+      }, () => fetchData())
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const filteredTransactions = dashboardData.transactions.filter(transaction => {
+    const now = new Date()
+    const transactionDate = new Date(transaction.transaction_date)
+    const timeDiff = now.getTime() - transactionDate.getTime()
+    
+    switch(selectedFilter) {
+      case '24h': return timeDiff <= 86400000
+      case '7d': return timeDiff <= 604800000
+      case '30d': return timeDiff <= 2592000000
+      default: return true
+    }
+  })
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: { display: true, text: 'Expenditure Overview' },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            let label = context.dataset.label || ''
+            if (label) label += ': '
+            if (context.parsed.y !== null) 
+              label += `Ksh ${context.parsed.y.toLocaleString()}`
+            return label
+          }
+        }
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col">
-            <nav className="grid gap-2 text-lg font-medium">
-              <Link href="#" className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <Image
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="PochiYangu Logo"
-                  width={40}
-                  height={40}
-                  className="rounded-lg"
-                />
-                <span>PochiYangu</span>
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
-                <Home className="h-5 w-5" />
-                Home
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-gray-900 transition-all hover:text-gray-900 dark:bg-gray-800 dark:text-gray-50 dark:hover:text-gray-50"
-              >
-                <BarChart3 className="h-5 w-5" />
-                Dashboard
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
-                <CreditCard className="h-5 w-5" />
-                Accounts
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
-                <DollarSign className="h-5 w-5" />
-                Transactions
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              >
-                <Settings className="h-5 w-5" />
-                Settings
-              </Link>
-            </nav>
-          </SheetContent>
-        </Sheet>
-        <Link href="#" className="flex items-center gap-2 text-lg font-semibold md:text-base">
-          <Image
-            src="/placeholder.svg?height=40&width=40"
-            alt="PochiYangu Logo"
-            width={40}
-            height={40}
-            className="rounded-lg"
-          />
-          <span className="hidden md:inline">PochiYangu</span>
-        </Link>
-        <nav className="hidden md:flex md:gap-2 lg:gap-4">
-          <Link
-            href="#"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-          >
-            <Home className="h-5 w-5" />
-            <span>Home</span>
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-gray-900 transition-all hover:text-gray-900 dark:bg-gray-800 dark:text-gray-50 dark:hover:text-gray-50"
-          >
-            <BarChart3 className="h-5 w-5" />
-            <span>Dashboard</span>
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-          >
-            <CreditCard className="h-5 w-5" />
-            <span>Accounts</span>
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-          >
-            <DollarSign className="h-5 w-5" />
-            <span>Transactions</span>
-          </Link>
-        </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="icon">
-            <Settings className="h-5 w-5" />
-            <span className="sr-only">Settings</span>
-          </Button>
-          <Avatar>
-            <AvatarImage src="/placeholder-user.jpg" alt="User" />
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
-        </div>
-      </header>
-      <main className="flex-1 p-4 md:p-6">
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <HeaderNav />
+      
+      <main className="flex-1 p-4 md:p-6 space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$45,231.89</div>
-              <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+              <div className="text-2xl font-bold">Ksh {dashboardData.totalBalance.toLocaleString()}</div>
+              <CardDescription>Across all accounts</CardDescription>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Income</CardTitle>
-              <ArrowUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Chama Contributions</CardTitle>
+              <Users className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$7,350.00</div>
-              <p className="text-xs text-muted-foreground">+8.2% from last month</p>
+              <div className="text-2xl font-bold">Ksh {dashboardData.chamaContributions.toLocaleString()}</div>
+              <CardDescription>Total contributions</CardDescription>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Expenses</CardTitle>
-              <ArrowDown className="h-4 w-4 text-muted-foreground" />
+              <TrendingDown className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$3,850.50</div>
-              <p className="text-xs text-muted-foreground">+4.1% from last month</p>
+              <div className="text-2xl font-bold">Ksh {dashboardData.expenses.toLocaleString()}</div>
+              <CardDescription>This month's spending</CardDescription>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Savings</CardTitle>
-              <PieChart className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$3,499.50</div>
-              <p className="text-xs text-muted-foreground">+12.5% from last month</p>
+              <div className="text-2xl font-bold">Ksh {dashboardData.savings.toLocaleString()}</div>
+              <CardDescription>Total savings</CardDescription>
             </CardContent>
           </Card>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
-          <Card className="lg:col-span-4">
-            <CardHeader>
-              <CardTitle>Financial Overview</CardTitle>
-              <CardDescription>Your financial activity for the past 30 days.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                Chart will be displayed here
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>Your latest financial activities.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <CreditCard className="h-4 w-4" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Financial Overview</CardTitle>
+                <CardDescription>Expenditure patterns</CardDescription>
+              </CardHeader>
+              <CardContent className="h-96">
+                <Bar data={chartData} options={chartOptions} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Recent Transactions</CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={selectedFilter === '24h' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSelectedFilter('24h')}
+                    >
+                      <Clock className="h-4 w-4 mr-2" /> 24h
+                    </Button>
+                    <Button
+                      variant={selectedFilter === '7d' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSelectedFilter('7d')}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" /> 7d
+                    </Button>
                   </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Online Purchase</p>
-                    <p className="text-sm text-muted-foreground">Amazon.com</p>
-                  </div>
-                  <div className="ml-auto font-medium text-red-500">-$45.50</div>
                 </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <DollarSign className="h-4 w-4" />
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-[500px] overflow-y-auto">
+                {filteredTransactions.length > 0 ? (
+                  filteredTransactions.map((transaction) => (
+                    <div key={transaction.id} className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                      <div>
+                        <p className="font-medium">{transaction.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(transaction.transaction_date).toLocaleDateString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className={`font-medium ${
+                        transaction.transaction_type === 'income' 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {transaction.transaction_type === 'income' ? '+' : '-'}
+                        Ksh {transaction.amount.toLocaleString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    No transactions found
                   </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Salary Deposit</p>
-                    <p className="text-sm text-muted-foreground">Employer Inc.</p>
-                  </div>
-                  <div className="ml-auto font-medium text-green-500">+$2,500.00</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Grocery Shopping</p>
-                    <p className="text-sm text-muted-foreground">Local Market</p>
-                  </div>
-                  <div className="ml-auto font-medium text-red-500">-$125.30</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Utility Bill</p>
-                    <p className="text-sm text-muted-foreground">Electric Company</p>
-                  </div>
-                  <div className="ml-auto font-medium text-red-500">-$85.00</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <DollarSign className="h-4 w-4" />
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Freelance Payment</p>
-                    <p className="text-sm text-muted-foreground">Client XYZ</p>
-                  </div>
-                  <div className="ml-auto font-medium text-green-500">+$350.00</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Savings Goals</CardTitle>
-              <CardDescription>Track your progress towards financial goals.</CardDescription>
+              <CardTitle>Your Chamas</CardTitle>
+              <CardDescription>Active investment groups</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Vacation Fund</div>
-                    <div className="text-sm text-muted-foreground">65%</div>
+            <CardContent className="space-y-2">
+              {dashboardData.chamas.map((chama) => (
+                <div key={chama.id} className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                  <div>
+                    <p className="font-medium">{chama.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {chama.members?.length || 0} members
+                    </p>
                   </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full w-[65%] rounded-full bg-primary" />
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <div>$1,950 saved</div>
-                    <div>$3,000 goal</div>
+                  <div className="text-primary">
+                    Ksh {chama.contribution_amount.toLocaleString()}/mo
                   </div>
                 </div>
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">New Car</div>
-                    <div className="text-sm text-muted-foreground">25%</div>
-                  </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full w-[25%] rounded-full bg-primary" />
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <div>$5,000 saved</div>
-                    <div>$20,000 goal</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Emergency Fund</div>
-                    <div className="text-sm text-muted-foreground">90%</div>
-                  </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full w-[90%] rounded-full bg-primary" />
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <div>$9,000 saved</div>
-                    <div>$10,000 goal</div>
-                  </div>
-                </div>
-                <Button className="w-full" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Goal
-                </Button>
-              </div>
+              ))}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Accounts</CardTitle>
-              <CardDescription>Manage your connected accounts.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                      <CreditCard className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium leading-none">Checking Account</p>
-                      <p className="text-sm text-muted-foreground">**** 4832</p>
-                    </div>
-                  </div>
-                  <div className="font-medium">$12,350.45</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                      <CreditCard className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium leading-none">Savings Account</p>
-                      <p className="text-sm text-muted-foreground">**** 7291</p>
-                    </div>
-                  </div>
-                  <div className="font-medium">$24,400.00</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                      <CreditCard className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium leading-none">Credit Card</p>
-                      <p className="text-sm text-muted-foreground">**** 5678</p>
-                    </div>
-                  </div>
-                  <div className="font-medium text-red-500">-$1,250.00</div>
-                </div>
-                <Button className="w-full" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Account
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Upcoming Bills</CardTitle>
-              <CardDescription>Stay on top of your payments.</CardDescription>
+              <CardDescription>Pending payments</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <Home className="h-4 w-4" />
+            <CardContent className="space-y-2">
+              {dashboardData.bills.map((bill) => (
+                <div key={bill.id} className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                  <div>
+                    <p className="font-medium">{bill.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Due {new Date(bill.due_date).toLocaleDateString()}
+                    </p>
                   </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Rent Payment</p>
-                    <p className="text-xs text-muted-foreground">Due in 5 days</p>
+                  <div className="text-primary">
+                    Ksh {bill.amount.toLocaleString()}
                   </div>
-                  <div className="ml-auto font-medium">$1,200.00</div>
                 </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Credit Card Payment</p>
-                    <p className="text-xs text-muted-foreground">Due in 12 days</p>
-                  </div>
-                  <div className="ml-auto font-medium">$350.00</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Internet Bill</p>
-                    <p className="text-xs text-muted-foreground">Due in 8 days</p>
-                  </div>
-                  <div className="ml-auto font-medium">$75.00</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Phone Bill</p>
-                    <p className="text-xs text-muted-foreground">Due in 15 days</p>
-                  </div>
-                  <div className="ml-auto font-medium">$45.00</div>
-                </div>
-                <Button className="w-full" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Bill
-                </Button>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
