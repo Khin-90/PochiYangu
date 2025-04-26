@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     // 🛡️ Import auth only when POST is called
-    const { auth } = await import('@/lib/auth'); // Adjust path if needed
+    const { auth } = await import('@/context/auth-context'); // Adjust path if needed
     
     const { user } = await auth();
     
