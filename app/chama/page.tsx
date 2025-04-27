@@ -1,449 +1,604 @@
 "use client";
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import Link from "next/link"
-import Image from "next/image"
-import { ArrowRight, Calendar, DollarSign, Menu, PiggyBank, Plus, Send, Users } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import { Copy, Users, Plus } from "lucide-react";
+import { RealtimeChannel } from '@supabase/supabase-js';
+
+// Define TypeScript interfaces
+interface User {
+  id: string;
+  email?: string;
+}
+
+interface ChamaMember {
+  count?: number;
+  user_id?: string;
+}
+
+interface Chama {
+  id: string;
+  name: string;
+  contribution_amount: number | string;
+  frequency: string;
+  target?: string;
+  owner_id: string;
+  invitation_code: string;
+  current_cycle: number;
+  total_contributions: number;
+  current_cycle_start: string;
+  is_public: boolean;
+  members?: ChamaMember[];
+}
+
+interface Profile {
+  username: string;
+}
+
+interface Invitation {
+  id: string;
+  chama_id: string;
+  user_id: string;
+  status: string;
+  chamas: Chama;
+  invited_by?: Profile;
+}
+
+interface NewChama {
+  name: string;
+  contribution_amount: string;
+  frequency: string;
+  target: string;
+}
+
+interface ChamaMemberWithChama {
+  chamas: Chama;
+}
 
 export default function ChamaPage() {
-  const { toast } = useToast()
-  const [user, setUser] = useState(null)
-  const [chamas, setChamas] = useState([])
-  const [discoverChamas, setDiscoverChamas] = useState([])
-  const [invitations, setInvitations] = useState([])
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [newChama, setNewChama] = useState({
+  const { toast } = useToast();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [chamas, setChamas] = useState<Chama[]>([]);
+  const [discoverChamas, setDiscoverChamas] = useState<Chama[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [newChama, setNewChama] = useState<NewChama>({
     name: '',
     contribution_amount: '',
     frequency: 'monthly',
     target: ''
-  })
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [joinCode, setJoinCode] = useState('');
 
+  // Fetch all necessary data
   useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      if (user) {
-        await Promise.all([
-          fetchUserChamas(user.id),
-          fetchDiscoverChamas(user.id),
-          fetchInvitations(user.id)
-        ])
-      }
-    }
-    init()
-    const subscription = setupRealtime()
-    return () => subscription?.unsubscribe()
-  }, [])
+    let mounted = true;
+    const subscription = setupRealtime();
 
-  const fetchUserChamas = async (userId) => {
+    const fetchData = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (!mounted) return;
+        
+        if (error) throw error;
+        
+        setUser(user ?? null);
+        if (user) {
+          await Promise.all([
+            fetchUserChamas(user.id),
+            fetchDiscoverChamas(user.id),
+            fetchInvitations(user.id)
+          ]);
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          toast({ variant: "destructive", title: "Error", description: error.message });
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Fetch user's chamas
+  const fetchUserChamas = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('chama_members')
-        .select(`
-          chamas (
-            *,
-            members:chama_members (user_id, status),
-            contributions (amount, created_at)
-        `)
+        .select('chamas(*, members:chama_members(count))')
         .eq('user_id', userId)
         .eq('status', 'active')
+        .returns<ChamaMemberWithChama[]>();
 
-      if (error) throw error
-      setChamas(data.map(item => item.chamas))
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      if (error) throw error;
+      
+      const userChamas = data?.map(item => item.chamas).filter((chama): chama is Chama => !!chama) || [];
+      setChamas(userChamas);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
     }
-  }
+  };
 
-  const fetchDiscoverChamas = async (userId) => {
+  // Fetch discoverable chamas
+  const fetchDiscoverChamas = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('chamas')
-        .select('*, members:chama_members (user_id, status)')
-        .eq('is_public', true)
-        .not('members.user_id', 'eq', userId)
+        .select('*, members:chama_members(count, user_id)')
+        .eq('is_public', true);
 
-      if (error) throw error
-      setDiscoverChamas(data)
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      if (searchQuery) {
+        query = query.ilike('name', `%${searchQuery}%`);
+      }
+
+      const { data, error } = await query.returns<Chama[]>();
+
+      if (error) throw error;
+      
+      const filtered = data.filter(chama => 
+        !chama.members?.some(member => member.user_id === userId)
+      );
+      setDiscoverChamas(filtered);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
     }
-  }
+  };
 
-  const fetchInvitations = async (userId) => {
+  // Fetch invitations
+  const fetchInvitations = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('chama_invitations')
-        .select('*, chamas (*)')
-        .eq('invited_user', userId)
+        .select('*, chamas(*), invited_by:profiles(username)')
+        .eq('user_id', userId)
         .eq('status', 'pending')
+        .returns<Invitation[]>();
 
-      if (error) throw error
-      setInvitations(data)
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      if (error) throw error;
+      setInvitations(data || []);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
     }
-  }
+  };
 
-  const handleCreateChama = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  // Handle chama creation
+  const handleCreateChama = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setLoading(true);
     try {
+      const invitationCode = uuidv4();
       const { data, error } = await supabase
         .from('chamas')
         .insert([{
           ...newChama,
           owner_id: user.id,
+          invitation_code: invitationCode,
           current_cycle: 1,
           total_contributions: 0,
-          current_cycle_start: new Date().toISOString(),
-          created_at: new Date().toISOString()
+          current_cycle_start: new Date().toISOString()
         }])
         .select()
+        .single<Chama>();
 
-      if (error) throw error
+      if (error) throw error;
+      if (!data) throw new Error("Failed to create chama");
 
       await supabase
         .from('chama_members')
         .insert([{
-          chama_id: data[0].id,
+          chama_id: data.id,
           user_id: user.id,
           role: 'admin',
           status: 'active'
-        }])
+        }]);
 
-      setShowCreateForm(false)
-      setNewChama({ name: '', contribution_amount: '', frequency: 'monthly', target: '' })
-      await fetchUserChamas(user.id)
-      toast({ title: "Success", description: "Chama created successfully!" })
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      setShowCreateForm(false);
+      setNewChama({ name: '', contribution_amount: '', frequency: 'monthly', target: '' });
+      
+      toast({ 
+        title: "Chama Created!", 
+        description: (
+          <div className="flex items-center gap-2">
+            <span>Invitation Code: {invitationCode}</span>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(invitationCode);
+                toast({ title: "Copied!", description: "Invitation code copied to clipboard" });
+              }}
+              className="p-1 rounded hover:bg-gray-100"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+          </div>
+        ) 
+      });
+
+      await Promise.all([
+        fetchUserChamas(user.id),
+        fetchDiscoverChamas(user.id)
+      ]);
+      
+      router.push(`/chamas/${data.id}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleJoinChama = async (chamaId) => {
+  // Handle joining by code
+  const handleJoinByCode = async () => {
+    if (!joinCode.trim()) {
+      toast({ title: "Error", description: "Please enter an invitation code" });
+      return;
+    }
+
+    if (!user) {
+      toast({ title: "Error", description: "User not logged in" });
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      const { data: chama, error: chamaError } = await supabase
+        .from('chamas')
+        .select('id, is_public')
+        .eq('invitation_code', joinCode.trim())
+        .single();
+
+      if (chamaError || !chama) throw new Error("Invalid invitation code");
+
+      const { error: memberError } = await supabase
         .from('chama_members')
-        .insert([{
+        .insert({
+          chama_id: chama.id,
+          user_id: user.id,
+          role: 'member',
+          status: 'active'
+        });
+
+      if (memberError) throw memberError;
+
+      setJoinCode('');
+      await Promise.all([
+        fetchUserChamas(user.id),
+        fetchDiscoverChamas(user.id)
+      ]);
+      toast({ title: "Success", description: "Successfully joined chama!" });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
+    }
+  };
+
+  // Handle joining a chama directly
+  const handleJoinChama = async (chamaId: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('chama_members')
+        .insert({
           chama_id: chamaId,
           user_id: user.id,
-          status: 'pending'
-        }])
-
-      if (error) throw error
-      await fetchDiscoverChamas(user.id)
-      toast({ title: "Success", description: "Join request sent successfully!" })
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+          role: 'member',
+          status: 'active'
+        });
+      
+      await Promise.all([
+        fetchUserChamas(user.id),
+        fetchDiscoverChamas(user.id)
+      ]);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw error;
+      }
     }
-  }
+  };
 
-  const handleInvitationResponse = async (invitationId, accept) => {
+  // Handle invitation responses
+  const handleInvitationResponse = async (invitationId: string, accept: boolean) => {
+    if (!user) return;
+    
     try {
-      const { error } = await supabase
-        .from('chama_invitations')
-        .update({ status: accept ? 'accepted' : 'declined' })
-        .eq('id', invitationId)
-
-      if (error) throw error
-
       if (accept) {
-        const invitation = invitations.find(i => i.id === invitationId)
+        const { data: invitation, error: invitationError } = await supabase
+          .from('chama_invitations')
+          .select('chama_id')
+          .eq('id', invitationId)
+          .single<{ chama_id: string }>();
+
+        if (invitationError) throw invitationError;
+        if (!invitation) throw new Error("Invitation not found");
+
         await supabase
           .from('chama_members')
-          .insert([{
-            chama_id: invitation.chamas.id,
+          .insert({
+            chama_id: invitation.chama_id,
             user_id: user.id,
+            role: 'member',
             status: 'active'
-          }])
+          });
       }
 
-      setInvitations(invitations.filter(i => i.id !== invitationId))
-      toast({ title: "Success", description: `Invitation ${accept ? 'accepted' : 'declined'}!` })
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
-    }
-  }
+      await supabase
+        .from('chama_invitations')
+        .update({ status: accept ? 'accepted' : 'rejected' })
+        .eq('id', invitationId);
 
-  const setupRealtime = () => {
+      setInvitations(invitations.filter(i => i.id !== invitationId));
+      toast({ title: "Success", description: `Invitation ${accept ? 'accepted' : 'rejected'}` });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
+    }
+  };
+
+  // Setup realtime updates
+  const setupRealtime = (): RealtimeChannel | undefined => {
+    if (!user) return;
+
     return supabase
-      .channel('chama-changes')
-      .on('postgres_changes', { 
+      .channel('chama-updates')
+      .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'chamas'
+        table: 'chama_members',
+        filter: `user_id=eq.${user.id}`
       }, () => {
-        if (user) {
-          fetchUserChamas(user.id)
-          fetchDiscoverChamas(user.id)
-        }
+        fetchUserChamas(user.id);
+        fetchDiscoverChamas(user.id);
       })
-      .subscribe()
-  }
-
-  const calculateCycleProgress = (startDate, frequency) => {
-    const now = new Date()
-    const start = new Date(startDate)
-    let end = new Date(start)
-    
-    switch(frequency) {
-      case 'weekly': end.setDate(end.getDate() + 7); break
-      case 'monthly': end.setMonth(end.getMonth() + 1); break
-      case 'quarterly': end.setMonth(end.getMonth() + 3); break
-    }
-    
-    const total = end - start
-    const current = now - start
-    return Math.min((current / total) * 100, 100)
-  }
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      maximumFractionDigits: 0
-    }).format(amount || 0)
-  }
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chama_invitations',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        fetchInvitations(user.id);
+      })
+      .subscribe();
+  };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header remains same */}
+    <div className="container mx-auto p-4">
+      <Tabs defaultValue="my">
+        <TabsList className="grid grid-cols-3">
+          <TabsTrigger value="my">My Chamas</TabsTrigger>
+          <TabsTrigger value="discover">Discover</TabsTrigger>
+          <TabsTrigger value="invitations">Invitations</TabsTrigger>
+        </TabsList>
 
-      <main className="flex-1 p-4 md:p-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Chama Groups</h1>
-              <p className="text-muted-foreground">Manage your group savings and investment circles.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => setShowCreateForm(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Chama
-              </Button>
-            </div>
+        {/* My Chamas Tab */}
+        <TabsContent value="my" className="mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">My Chamas</h2>
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="mr-2 h-4 w-4" /> New Chama
+            </Button>
           </div>
 
-          <Tabs defaultValue="my-chamas" className="mt-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="my-chamas">My Chamas</TabsTrigger>
-              <TabsTrigger value="discover">Discover</TabsTrigger>
-              <TabsTrigger value="invitations">Invitations</TabsTrigger>
-            </TabsList>
-
-            {/* My Chamas Tab */}
-            <TabsContent value="my-chamas" className="mt-6">
-              {chamas.length === 0 ? (
-                <div className="text-center py-12">
-                  <PiggyBank className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No chamas found</h3>
-                  <p className="text-muted-foreground mt-2">Get started by creating a new chama.</p>
-                </div>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {chamas.map(chama => (
-                    <Card key={chama.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle>{chama.name}</CardTitle>
-                          <Badge variant={chama.status === 'active' ? 'default' : 'secondary'}>
-                            {chama.status || 'Active'}
-                          </Badge>
-                        </div>
-                        <CardDescription>
-                          {chama.members?.length || 0} members • {chama.frequency} contributions
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm">Total Pool</span>
-                              <span className="font-bold">{formatCurrency(chama.total_contributions)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm">Your Contribution</span>
-                              <span className="font-medium">
-                                {formatCurrency(chama.contributions?.reduce((sum, c) => sum + c.amount, 0))}
-                              </span>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm">Contribution Cycle</span>
-                              <span className="text-sm font-medium">
-                                {chama.current_cycle || 1}/{chama.total_cycles || 12}
-                              </span>
-                            </div>
-                            <Progress 
-                              value={calculateCycleProgress(chama.current_cycle_start || new Date(), chama.frequency)} 
-                              className="h-2"
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button className="w-full" asChild>
-                          <Link href={`/chama/${chama.id}`}>
-                            View Details
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Discover Tab */}
-            <TabsContent value="discover" className="mt-6">
-              {discoverChamas.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No chamas to discover</h3>
-                  <p className="text-muted-foreground mt-2">All public chamas are already joined.</p>
-                </div>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {discoverChamas.map(chama => (
-                    <Card key={chama.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle>{chama.name}</CardTitle>
-                        <CardDescription>
-                          {chama.members?.length || 0} members • {chama.frequency} contributions
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Monthly Contribution</span>
-                            <span className="font-medium">{formatCurrency(chama.contribution_amount)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Total Pool</span>
-                            <span className="font-medium">{formatCurrency(chama.total_contributions)}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button className="w-full" onClick={() => handleJoinChama(chama.id)}>
-                          Join Chama
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Invitations Tab */}
-            <TabsContent value="invitations" className="mt-6">
-              {invitations.length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No pending invitations</h3>
-                  <p className="text-muted-foreground mt-2">You'll see invitations here when received.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {invitations.map(invitation => (
-                    <Card key={invitation.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle>{invitation.chamas.name}</CardTitle>
-                        <CardDescription>
-                          Invited by {invitation.invited_by}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Contribution Amount</span>
-                          <span className="font-medium">
-                            {formatCurrency(invitation.chamas.contribution_amount)}
-                          </span>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-between">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => handleInvitationResponse(invitation.id, false)}
-                        >
-                          Decline
-                        </Button>
-                        <Button onClick={() => handleInvitationResponse(invitation.id, true)}>
-                          Accept
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-
-          {/* Create Chama Modal */}
           {showCreateForm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-              <div className="bg-white p-6 rounded-lg w-full max-w-md">
-                <h3 className="text-lg font-bold mb-4">Create New Chama</h3>
-                <form onSubmit={handleCreateChama}>
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="Chama Name"
-                      value={newChama.name}
-                      onChange={(e) => setNewChama({...newChama, name: e.target.value})}
-                      required
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Contribution Amount"
-                      value={newChama.contribution_amount}
-                      onChange={(e) => setNewChama({...newChama, contribution_amount: e.target.value})}
-                      required
-                    />
-                    <select
-                      value={newChama.frequency}
-                      onChange={(e) => setNewChama({...newChama, frequency: e.target.value})}
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                    </select>
-                    <div className="flex gap-2">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => setShowCreateForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Chama'}
-                      </Button>
-                    </div>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Create New Chama</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateChama} className="space-y-4">
+                  <Input
+                    placeholder="Chama Name"
+                    value={newChama.name}
+                    onChange={(e) => setNewChama({...newChama, name: e.target.value})}
+                    required
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Contribution Amount"
+                    value={newChama.contribution_amount}
+                    onChange={(e) => setNewChama({...newChama, contribution_amount: e.target.value})}
+                    required
+                  />
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={newChama.frequency}
+                    onChange={(e) => setNewChama({...newChama, frequency: e.target.value})}
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                  </select>
+                  <Input
+                    type="number"
+                    placeholder="Target Amount (optional)"
+                    value={newChama.target}
+                    onChange={(e) => setNewChama({...newChama, target: e.target.value})}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Creating..." : "Create Chama"}
+                    </Button>
                   </div>
                 </form>
-              </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {chamas.map(chama => (
+              <Card key={chama.id}>
+                <CardHeader>
+                  <CardTitle>{chama.name}</CardTitle>
+                  <CardDescription className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    {chama.members?.[0]?.count || 0} members
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Contribution:</span>
+                      <span className="font-medium">KSh {chama.contribution_amount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Frequency:</span>
+                      <span className="font-medium capitalize">{chama.frequency}</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full"
+                    onClick={() => router.push(`/chamas/${chama.id}`)}
+                  >
+                    View Chama
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Discover Tab */}
+        <TabsContent value="discover" className="mt-6">
+          <div className="space-y-4 mb-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter invitation code"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
+              />
+              <Button onClick={handleJoinByCode}>Join with Code</Button>
+            </div>
+            <Input
+              placeholder="Search chamas..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (user) fetchDiscoverChamas(user.id);
+              }}
+            />
+          </div>
+
+          {discoverChamas.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No chamas found. Try adjusting your search.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {discoverChamas.map(chama => (
+                <Card key={chama.id}>
+                  <CardHeader>
+                    <CardTitle>{chama.name}</CardTitle>
+                    <CardDescription className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      {chama.members?.[0]?.count || 0} members
+                    </CardDescription>
+                    <Badge variant={chama.is_public ? "default" : "secondary"}>
+                      {chama.is_public ? "Public" : "Private"}
+                    </Badge>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Contribution:</span>
+                        <span className="font-medium">KSh {chama.contribution_amount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Frequency:</span>
+                        <span className="font-medium capitalize">{chama.frequency}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full"
+                      onClick={async () => {
+                        await handleJoinChama(chama.id);
+                        router.push(`/chamas/${chama.id}`);
+                      }}
+                    >
+                      Join Chama
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
             </div>
           )}
-        </div>
-      </main>
+        </TabsContent>
+
+        {/* Invitations Tab */}
+        <TabsContent value="invitations" className="mt-6">
+          {invitations.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No pending invitations</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {invitations.map(invitation => (
+                <Card key={invitation.id}>
+                  <CardHeader>
+                    <CardTitle>{invitation.chamas.name}</CardTitle>
+                    <CardDescription>
+                      Invited by: {invitation.invited_by?.username || "Admin"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Contribution:</span>
+                      <span className="font-medium">KSh {invitation.chamas.contribution_amount}</span>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button 
+                      variant="outline"
+                      onClick={async () => await handleInvitationResponse(invitation.id, false)}
+                    >
+                      Decline
+                    </Button>
+                    <Button 
+                      onClick={async () => {
+                        await handleInvitationResponse(invitation.id, true);
+                        router.push(`/chamas/${invitation.chamas.id}`);
+                      }}
+                    >
+                      Accept
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
 }
