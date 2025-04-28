@@ -27,15 +27,23 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const strengthColors = [
+    "bg-red-500",
+    "bg-yellow-500",
+    "bg-blue-500",
+    "bg-green-500",
+  ];
 
   useEffect(() => {
     if (formData.password && formData.confirmPassword && 
         formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
-    } else {
-      setError(prev => prev === "Passwords do not match" ? "" : prev);
+    } else if (error === "Passwords do not match") {
+      setError("");
     }
-  }, [formData.password, formData.confirmPassword]);
+  }, [formData.password, formData.confirmPassword, error]);
 
   useEffect(() => {
     let strength = 0;
@@ -62,6 +70,14 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccessMessage("");
+
+    // Validation checks
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError("Please enter your full name");
+      setIsLoading(false);
+      return;
+    }
 
     if (!validateEmail(formData.email)) {
       setError("Please enter a valid email address");
@@ -88,129 +104,229 @@ export default function SignupPage() {
     }
 
     try {
+      // Sign up with Supabase
       const { data, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
+            first_name: formData.firstName.trim(),
+            last_name: formData.lastName.trim(),
           },
-          emailRedirectTo: `${location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         }
       });
 
-      if (authError) throw authError;
-      
-      if (!data.user?.identities?.length) {
-        throw new Error("User already exists");
+      if (authError) {
+        throw authError;
       }
 
-      await supabase
-        .from('accounts')
-        .insert([{
-          user_id: data.user.id,
-          account_name: 'Primary Account',
-          account_type: 'checking',
-          balance: 200000.00,
-          currency: 'KES'
-        }]);
+      // Check if user was created (not just email sent)
+      if (data.user) {
+        // Create account record
+        const { error: dbError } = await supabase
+          .from('accounts')
+          .insert([{
+            user_id: data.user.id,
+            account_name: 'Primary Account',
+            account_type: 'checking',
+            balance: 200000.00,
+            currency: 'KES'
+          }]);
 
-      setEmailSent(true);
-      setTimeout(() => router.push('/dashboard'), 3000);
+        if (dbError) throw dbError;
+
+        setSuccessMessage("Account created successfully! Redirecting to verification...");
+        setEmailSent(true);
+        setTimeout(() => router.push('/verify-email'), 3000);
+      } else {
+        setSuccessMessage("Verification email sent! Please check your inbox.");
+        setEmailSent(true);
+      }
 
     } catch (error: any) {
-      setError(error.message || "Registration failed. Please try again.");
+      console.error('Signup error:', error);
+      setError(error.message.includes('User already registered') 
+        ? "This email is already registered. Please sign in."
+        : "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const strengthColors = [
-    "bg-sky-100",
-    "bg-sky-200",
-    "bg-sky-400",
-    "bg-sky-600",
-    "bg-sky-800"
-  ];
-
-  return (
-    <div className="flex min-h-screen bg-sky-50">
-      {isLoading && (
-        <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-50">
-          <div className="text-center">
-            <div className="mb-4 animate-bounce">
-              <Image
-                src="/logo.svg"
-                alt="Logo"
-                width={80}
-                height={80}
-                className="rounded-lg bg-sky-100 p-2 mx-auto"
-              />
-            </div>
-            <div className="text-sky-600 font-semibold animate-pulse">
-              Creating PochiYangu Account...
-            </div>
-            <div className="mt-4 text-sm text-sky-500">
-              Redirecting to dashboard in 3 seconds...
-            </div>
+  if (emailSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
+          <div className="mb-6">
+            <Image 
+              src="/logo.svg" 
+              alt="Logo" 
+              width={120} 
+              height={40} 
+              className="mx-auto"
+            />
           </div>
-        </div>
-      )}
-
-      <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-        <div className="mx-auto w-full max-w-sm lg:w-96">
-          <div className="flex flex-col items-center">
-            <Link href="/" className="mb-8">
-              <Image
-                src="/logo.svg"
-                alt="Logo"
-                width={60}
-                height={60}
-                className="rounded-lg bg-sky-100 p-2"
-              />
-            </Link>
-            <h2 className="mt-6 text-3xl font-bold leading-9 tracking-tight text-sky-900">
-              Create your account
-            </h2>
-            <p className="mt-2 text-sm text-sky-600">
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-sky-700 hover:text-sky-600">
-                Sign in
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-10 bg-white p-8 rounded-2xl shadow-lg border border-sky-100">
-            {emailSent ? (
-              <div className="text-center space-y-4">
-                <div className="text-sky-600 text-2xl font-bold">✓ Email Sent!</div>
-                <p className="text-sky-500">
-                  We've sent a confirmation link to <span className="font-semibold">{formData.email}</span>
-                </p>
-                <p className="text-sm text-sky-400">
-                  You'll be automatically redirected to the dashboard...
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Keep the existing form fields exactly as they were */}
-                {/* ... (all your existing form JSX here) ... */}
-              </form>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold mb-4">Check your email</h2>
+          <p className="text-gray-600 mb-6">
+            {successMessage || "We've sent a verification link to your email address."}
+          </p>
+          <Button 
+            onClick={() => router.push('/login')}
+            className="w-full"
+          >
+            Back to Login
+          </Button>
         </div>
       </div>
-      
-      <div className="relative hidden w-0 flex-1 lg:block">
-        <Image
-          className="absolute inset-0 h-full w-full object-cover"
-          src="/finance-dashboard-preview.jpg"
-          alt="Financial dashboard preview"
-          width={1920}
-          height={1080}
-          priority
-        />
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <div className="mb-6 text-center">
+          <Image 
+            src="/logo.svg" 
+            alt="Logo" 
+            width={120} 
+            height={40} 
+            className="mx-auto"
+          />
+          <h1 className="text-2xl font-bold mt-4">Create your account</h1>
+          <p className="text-gray-600">Join us today!</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                type="text"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                type="text"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            <div className="mt-2">
+              <div className="flex gap-1 mb-1">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full ${
+                      i <= passwordStrength ? strengthColors[passwordStrength - 1] : "bg-gray-200"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Password strength: {passwordStrength < 2 ? "Weak" : passwordStrength < 3 ? "Medium" : "Strong"}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="terms"
+              name="termsAccepted"
+              checked={formData.termsAccepted}
+              onCheckedChange={(checked) => 
+                setFormData({...formData, termsAccepted: Boolean(checked)})
+              }
+            />
+            <label htmlFor="terms" className="text-sm text-gray-600">
+              I agree to the <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
+            </label>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? "Creating account..." : "Create Account"}
+          </Button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-gray-600">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            Sign in
+          </Link>
+        </div>
       </div>
     </div>
   );
